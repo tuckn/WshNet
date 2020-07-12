@@ -43,7 +43,7 @@
     },
     "meta": {
       "title": "WshNet",
-      "description": "This module provides some useful  WSH (Windows Script Host) functions that handle network on Windows.",
+      "description": "This module provides useful WSH (Windows Script Host) functions that handle network on Windows.",
       "keyword": "Windows, WSH, WSF, JScript, VBScript, modules, network"
     },
     "search": true,

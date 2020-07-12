@@ -5,7 +5,7 @@
   if (Wsh && Wsh.Net.SMB) return;
 
   /**
-   * This module provides some useful WSH (Windows Script Host) functions that handle SMB (Server Message Block), CIFS(Common Internet File System) on Windows.
+   * This module provides useful WSH (Windows Script Host) functions that handle SMB (Server Message Block), CIFS(Common Internet File System) on Windows.
    *
    * @namespace SMB
    * @memberof Wsh.Net

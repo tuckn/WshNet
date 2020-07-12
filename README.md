@@ -1,6 +1,6 @@
 # WshNet
 
-This module provides some useful  WSH (Windows Script Host) functions that handle network on Windows.
+This module provides useful WSH (Windows Script Host) functions that handle network on Windows.
 
 ## tuckn/Wsh series dependency
 
@@ -66,14 +66,14 @@ This allows the following functions to be used in _.\MyScript.js_.
 
 ## Usage
 
-Now _.\MyScript.js_ (JScript ) can use the useful functions to handle file system.
+Now _.\MyScript.js_ (JScript) can use the useful functions to handle file system.
 for example,
 
 ```js
 var net = Wsh.Net; // Shorthand
 
 var adapters = net.getAdaptersPropsSWbemObjs();
-// Returns: An Array of {@link https://docs.microsoft.com/en-us/windows/win32/cimwin32prov/win32-networkadapter|Win32_NetworkAdapter class}.
+// Returns: An Array of Win32_NetworkAdapter class.
 
 var adapters = net.getAdaptersPropsObjs();
 console.dir(adapters); //
@@ -149,7 +149,6 @@ net.importWinFirewallSettings('D:\\backup.wfw');
 ### SMB (Server Message Block)
 
 ```js
-var net = Wsh.Net; // Shorthand
 var smb = Wsh.Net.SMB; // Shorthand
 
 // Shares the directory of this Windows (Requires admin rights).
@@ -235,7 +234,7 @@ console.dir(connections);
 Many other functions are added.
 See the [documentation](https://docs.tuckn.net/WshNet) for more details.
 
-And you can also use all functions of [tuckn/WshPolyfill](https://github.com/tuckn/WshPolyfill), [tuckn/WshUtil](https://github.com/tuckn/WshUtil), [tuckn/WshPath](https://github.com/tuckn/WshPath), [tuckn/WshFileSystem](https://github.com/tuckn/WshFileSystem), [tuckn/WshOS](https://github.com/tuckn/WshOS), [tuckn/WshFileSystem](https://github.com/tuckn/WshFileSystem), [tuckn/WshProcess](https://github.com/tuckn/WshProcess) and [tuckn/WshChildProcess](https://github.com/tuckn/WshChildProcess).
+And you can also use all functions of [tuckn/WshPolyfill](https://github.com/tuckn/WshPolyfill), [tuckn/WshUtil](https://github.com/tuckn/WshUtil), [tuckn/WshPath](https://github.com/tuckn/WshPath), [tuckn/WshOS](https://github.com/tuckn/WshOS), [tuckn/WshFileSystem](https://github.com/tuckn/WshFileSystem), [tuckn/WshProcess](https://github.com/tuckn/WshProcess)  and [tuckn/WshChildProcess](https://github.com/tuckn/WshChildProcess).
 
 ## Documentation
 

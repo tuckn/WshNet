@@ -5,7 +5,7 @@
   if (Wsh && Wsh.Net) return;
 
   /**
-   * This module provides some useful  WSH (Windows Script Host) functions that handle network on Windows.
+   * This module provides useful WSH (Windows Script Host) functions that handle network on Windows.
    *
    * @namespace Net
    * @memberof Wsh
