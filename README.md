@@ -37,7 +37,7 @@ or
 > git submodule add https://github.com/tuckn/WshNet.git ./WshModules/WshNet
 ```
 
-(3) Include _.\WshNet\dist\bundle.js_ into your .wsf file.
+(3) Include _.\\WshNet\\dist\\bundle.js_ into your .wsf file.
 For Example, if your file structure is
 
 ```console
@@ -62,11 +62,11 @@ The content of above _Run.wsf_ is
 ```
 
 I recommend this .wsf file encoding to be UTF-8 [BOM, CRLF].
-This allows the following functions to be used in _.\MyScript.js_.
+This allows the following functions to be used in _.\\MyScript.js_.
 
 ## Usage
 
-Now _.\MyScript.js_ (JScript) can use the useful functions to handle file system.
+Now _.\\MyScript.js_ (JScript) can use the useful functions to handle file system.
 for example,
 
 ```js
@@ -133,10 +133,10 @@ net.enablesDHCP('XX:XX:XX:XX:XX:XX'); // Returns: true
 // Gets/Sets the IP address set in adapters.
 net.getIpSetInAdapters('XX:XX:XX:XX:XX:XX'); // Returns: ['xx.xx.xx.xx']
 net.getDefaultGateways('XX:XX:XX:XX:XX:XX'); // Returns: ['xx.xx.xx.xx']
-net.setIpAddress('Ethernet 1', ip, mask, defGw);
+net.setIpAddress('Ethernet 1', '11.22.33.44', '255.255.0.0', '11.22.33.1');
 // Gets/Sets the IP addresses of DNS set in adapters.
 net.getDnsIPsSetInAdapters('XX:XX:XX:XX:XX:XX'); // Returns: ['xx.xx.xx.xx', 'xx.xx.xx.xx']
-net.setDnsServers('Ethernet 1', ip, mask, defGw);
+net.setDnsServers('Ethernet 1', '11.22.33.1', '11.22.33.2');
 
 // Exports the Windows firewall settings (Requires admin rights)..
 net.exportWinFirewallSettings('D:\\backup.wfw');
@@ -234,7 +234,18 @@ console.dir(connections);
 Many other functions are added.
 See the [documentation](https://docs.tuckn.net/WshNet) for more details.
 
-And you can also use all functions of [tuckn/WshPolyfill](https://github.com/tuckn/WshPolyfill), [tuckn/WshUtil](https://github.com/tuckn/WshUtil), [tuckn/WshPath](https://github.com/tuckn/WshPath), [tuckn/WshOS](https://github.com/tuckn/WshOS), [tuckn/WshFileSystem](https://github.com/tuckn/WshFileSystem), [tuckn/WshProcess](https://github.com/tuckn/WshProcess)  and [tuckn/WshChildProcess](https://github.com/tuckn/WshChildProcess).
+### Dependency Modules
+
+You can also use the following useful functions in _.\\MyScript.js_ (JScript).
+
+- [tuckn/WshPolyfill](https://github.com/tuckn/WshPolyfill)
+- [tuckn/WshUtil](https://github.com/tuckn/WshUtil)
+- [tuckn/WshPath](https://github.com/tuckn/WshPath)
+- [tuckn/WshOS](https://github.com/tuckn/WshOS)
+- [tuckn/WshFileSystem](https://github.com/tuckn/WshFileSystem)
+- [tuckn/WshProcess](https://github.com/tuckn/WshProcess)
+- [tuckn/WshChildProcess](https://github.com/tuckn/WshChildProcess)
+
 
 ## Documentation
 

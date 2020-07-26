@@ -1,6 +1,4 @@
 ﻿/* globals Wsh: false */
-/* globals __filename: false */
-/* globals process: false */
 
 /* globals describe: false */
 /* globals test: false */
@@ -8,20 +6,16 @@
 
 // Shorthand
 var util = Wsh.Util;
-var path = Wsh.Path;
 var os = Wsh.OS;
 var fs = Wsh.FileSystem;
 var fse = Wsh.FileSystemExtra;
-var child_process = Wsh.ChildProcess;
 var net = Wsh.Net;
 
-var insp = util.inspect;
 var isSolidArray = util.isSolidArray;
 var isBoolean = util.isBoolean;
 var isSolidString = util.isSolidString;
-var includes = util.includes;
-var CSCRIPT = os.exefiles.cscript;
-var execFileSync = child_process.execFileSync;
+var CMD = os.exefiles.cmd;
+var NETSH_EXE = os.exefiles.netsh;
 
 var _cb = function (fn/* , args */) {
   var args = Array.from(arguments).slice(1);
@@ -152,74 +146,119 @@ describe('Net', function () {
 
   testName = 'exportWinFirewallSettings';
   test(testName, function () {
-    var RUN_SUBPROCESS = '/RUN_SUBPROCESS' + testName;
+    noneStrVals.forEach(function (val) {
+      expect(_cb(net.exportWinFirewallSettings, val)).toThrowError();
+    });
 
     var fwPath = os.makeTmpPath('net_test_exportfwset', '.wfw');
+    var retVal;
 
-    if (includes(process.argv, RUN_SUBPROCESS)) {
-      if (!process.isAdmin()) {
-        console.error('Rejected administration auth');
-        process.exit(1);
-      }
+    // dry-run
+    retVal = net.exportWinFirewallSettings(fwPath, { isDryRun: true });
+    expect(retVal).toContain('[os.runAsAdmin]: ' + CMD + ' /S /C"'
+      + NETSH_EXE + ' advfirewall export ' + fwPath + ' 1> ');
 
-      var firewallPath = process.argv.find(function (arg) {
-        return path.extname(arg) === '.wfw';
-      });
-
-      try {
-        net.exportWinFirewallSettings(firewallPath);
-      } catch (e) {
-        console.error(insp(e));
-        process.exit(1);
-      }
-      process.exit(0);
-    }
-
-    fse.removeSync(fwPath);
-    expect(fs.existsSync(fwPath)).toBe(false);
-
-    var args = ['//nologo', __filename, '-t', testName, RUN_SUBPROCESS, fwPath];
-    var opt = { runsAdmin: true, shell: true, winStyle: 'hidden' };
-
-    var rtnObj = execFileSync(CSCRIPT, args, opt);
-
-    expect(rtnObj.error).not.toBe(true);
+    retVal = net.exportWinFirewallSettings(fwPath);
+    expect(retVal.error).toBeFalsy();
+    expect(retVal.stdout).toContain('OK');
     expect(fs.existsSync(fwPath)).toBe(true);
 
     // Cleans
     fse.removeSync(fwPath);
     expect(fs.existsSync(fwPath)).toBe(false);
-
-    noneStrVals.forEach(function (val) {
-      expect(_cb(net.exportWinFirewallSettings, val)).toThrowError();
-    });
   });
 
   // Update
 
+  testName = 'setIpAddress';
+  test(testName, function () {
+    noneStrVals.forEach(function (val) {
+      expect(_cb(net.setIpAddress, val)).toThrowError();
+    });
+
+    var netName = 'Ethernet 1';
+    var ip = '11.22.33.44';
+    var mask = '255.255.0.0';
+    var defGw = '11.22.33.1';
+    var retVal;
+
+    // dry-run
+    retVal = net.setIpAddress(netName, ip, mask, defGw, { isDryRun: true });
+    expect(retVal).toContain('dry-run [_shRun]: ' + CMD + ' /S /C"'
+      + NETSH_EXE + ' "interface ipv4" "set address"'
+      + ' "name=\\"' + netName + '\\""'
+      + ' "source=static address=' + ip + '" mask=' + mask
+      + ' gateway=' + defGw + ' gwmetric=1 1> ');
+
+    expect('@TODO').toBe('Testing on virtual adapter');
+  });
+
   testName = 'setDnsServers';
   test(testName, function () {
-    expect('@TODO').toBe('tested');
+    noneStrVals.forEach(function (val) {
+      expect(_cb(net.setDnsServers, val)).toThrowError();
+    });
+
+    var retVal;
+    var netName = 'Ethernet 1';
+
+    // dry-run
+    retVal = net.setDnsServers(netName, null, null, { isDryRun: true });
+    expect(retVal).toContain('dry-run [_shRun]: ' + CMD + ' /S /C"'
+      + NETSH_EXE + ' "interface ipv4" "set dnsservers"'
+      + ' "name=\\"' + netName + '\\""'
+      + ' source=dhcp 1> ');
+
+    var dns1 = '11.22.33.1';
+
+    // dry-run
+    retVal = net.setDnsServers(netName, dns1, dns2, { isDryRun: true });
+    expect(retVal).toContain('dry-run [_shRun]: ' + CMD + ' /S /C"'
+      + NETSH_EXE + ' "interface ipv4" "set dnsservers"'
+      + ' "name=\\"' + netName + '\\""'
+      + ' source=static address=' + dns1 + ' register=non validate=no 1> ');
+
+    var dns2 = '11.22.33.2';
+
+    // dry-run
+    retVal = net.setDnsServers(netName, dns1, dns2, { isDryRun: true });
+    expect(retVal).toContain(CMD + ' /S /C"'
+      + NETSH_EXE + ' "interface ipv4" "add dnsservers"'
+      + ' "name=\\"' + netName + '\\""'
+      + ' address=' + dns2 + ' index=2 validate=no 1> ');
+
+    expect('@TODO').toBe('Testing on virtual adapter');
   });
 
   testName = 'setDnsServersWithWMI';
   test(testName, function () {
-    expect('@TODO').toBe('tested');
-  });
-
-  testName = 'setIpAddress';
-  test(testName, function () {
-    expect('@TODO').toBe('tested');
+    expect('@TODO').toBe('Testing on virtual adapter');
   });
 
   testName = 'importWinFirewallSettings';
   test(testName, function () {
-    // @TODO Run in a virtual Windows
-    expect('@TODO').toBe('tested');
-
     noneStrVals.forEach(function (val) {
-      expect(_cb(net.exportWinFirewallSettings, val)).toThrowError();
+      expect(_cb(net.importWinFirewallSettings, val)).toThrowError();
     });
+
+    var fwPath = os.makeTmpPath('net_test_exportfwset', '.wfw');
+
+    expect(_cb(net.importWinFirewallSettings, fwPath)).toThrowError();
+
+    fs.writeFileSync(fwPath, 'Dummy FireWall Values');
+
+    var retVal;
+
+    // dry-run
+    retVal = net.importWinFirewallSettings(fwPath, { isDryRun: true });
+    expect(retVal).toContain('[os.runAsAdmin]: ' + CMD + ' /S /C"'
+      + NETSH_EXE + ' advfirewall import ' + fwPath + ' 1> ');
+
+    // Cleans
+    fse.removeSync(fwPath);
+    expect(fs.existsSync(fwPath)).toBe(false);
+
+    expect('@TODO').toBe('Testing on virtual Window');
   });
 
   // Delete

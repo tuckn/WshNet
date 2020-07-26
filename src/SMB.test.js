@@ -24,6 +24,7 @@ var endsWith = util.startsWith;
 var hasContent = util.hasContent;
 var isSameMeaning = util.isSameMeaning;
 var srr = os.surroundPath;
+var CMD = os.exefiles.cmd;
 var CSCRIPT = os.exefiles.cscript;
 var NET = os.exefiles.net;
 var execSync = child_process.execSync;
@@ -100,6 +101,40 @@ describe('SMB', function () {
 
   // Share
 
+  testName = 'shareDirectory_dry-run';
+  test(testName, function () {
+    // Checks throwing error
+    noneStrVals.forEach(function (val) {
+      expect(_cb(net.SMB.shareDirectory, val)).toThrowError();
+      expect(_cb(net.SMB.shareDirectory, 'SharedName', val)).toThrowError();
+    });
+
+    var SHARED_NAME = 'ShareName_' + testName;
+    var GRANT = 'CHANGE';
+    var REMARK = 'Share for ' + testName;
+    var sharedDir = os.makeTmpPath() + '_dir';
+
+    expect(_cb(net.SMB.shareDirectory, SHARED_NAME, sharedDir)).toThrowError();
+
+    fse.ensureDirSync(sharedDir);
+    var retVal;
+
+    // dry-run
+    retVal = net.SMB.shareDirectory(SHARED_NAME, sharedDir, {
+      grant: GRANT,
+      remark: REMARK,
+      isDryRun: true
+    });
+    expect(retVal).toContain('dry-run [os.runAsAdmin]: ' + CMD + ' /S /C"'
+      + NET + ' share ' + SHARED_NAME + '=' + sharedDir
+      + ' /GRANT:Everyone,' + GRANT
+      + ' "/REMARK:' + REMARK + '" 1> ');
+
+    // Cleans
+    fse.removeSync(sharedDir);
+    expect(fs.existsSync(sharedDir)).toBe(false);
+  });
+
   testName = 'shareDirectory_READ';
   test(testName, function () {
     var cmd, retObj;
@@ -118,17 +153,6 @@ describe('SMB', function () {
     }
 
     // Shares
-    // Checks throwing error
-    noneStrVals.forEach(function (val) {
-      expect(_cb(net.SMB.shareDirectory, val)).toThrowError();
-      expect(_cb(net.SMB.shareDirectory, 'SharedName', val)).toThrowError();
-    });
-    // Checks whether throwing an error if non-admin
-    if (!process.isAdmin()) {
-      expect(_cb(net.SMB.shareDirectory, SHARED_NAME, sharedDir,
-        { grant: 'READ', remark: testName })).toThrowError();
-    }
-
     // Runs the admin process and Do the test function in it
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_SHARE_PROCESS;
     retObj = execSync(cmd, { runsAdmin: true });
@@ -165,17 +189,6 @@ describe('SMB', function () {
     }
 
     // Shares
-    // Checks throwing error
-    noneStrVals.forEach(function (val) {
-      expect(_cb(net.SMB.shareDirectory, val)).toThrowError();
-      expect(_cb(net.SMB.shareDirectory, 'SharedName', val)).toThrowError();
-    });
-    // Checks whether throwing an error if non-admin
-    if (!process.isAdmin()) {
-      expect(_cb(net.SMB.shareDirectory, SHARED_NAME, sharedDir,
-        { grant: 'CHANGE', remark: testName })).toThrowError();
-    }
-
     // Runs the admin process and Do the test function in it
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_SHARE_PROCESS;
     retObj = execSync(cmd, { runsAdmin: true });
@@ -321,6 +334,22 @@ describe('SMB', function () {
     expect(net.SMB.existsShareName(SHARED_NAME)).toBe(false);
   });
 
+  testName = 'delSharedDirectory_dry-run';
+  test(testName, function () {
+    // Checks throwing error
+    noneStrVals.forEach(function (val) {
+      expect(_cb(net.SMB.delSharedDirectory, val)).toThrowError();
+    });
+
+    var SHARED_NAME = 'ShareName_' + testName;
+    var retVal;
+
+    // dry-run
+    retVal = net.SMB.delSharedDirectory(SHARED_NAME, { isDryRun: true });
+    expect(retVal).toContain('dry-run [os.runAsAdmin]: ' + CMD + ' /S /C"'
+      + NET + ' share ' + SHARED_NAME + ' /DELETE /YES 1> ');
+  });
+
   testName = 'delSharedDirectory';
   test(testName, function () {
     var cmd, retObj;
@@ -344,16 +373,6 @@ describe('SMB', function () {
     expect(retObj.error).toBe(false);
 
     // Tests
-    // Checks throwing error
-    noneStrVals.forEach(function (val) {
-      expect(_cb(net.SMB.delSharedDirectory, val)).toThrowError();
-    });
-    // Checks whether throwing an error if non-admin
-    if (!process.isAdmin()) {
-      expect(_cb(net.SMB.shareDirectory, SHARED_NAME, sharedDir,
-        { grant: 'READ', remark: testName })).toThrowError();
-    }
-
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_DELTE_PROCESS;
     retObj = execSync(cmd, { runsAdmin: true });
     expect(retObj.error).toBe(false);
@@ -366,6 +385,41 @@ describe('SMB', function () {
   });
 
   // Connection
+
+  testName = '_getNetUseArgsToConnect';
+  test(testName, function () {
+    // Checks throwing error
+    noneStrVals.forEach(function (val) {
+      expect(_cb(net.SMB._getNetUseArgsToConnect, val)).toThrowError();
+    });
+
+    expect('@TODO').toBe('Tested');
+  });
+
+  testName = 'connect_dry-run';
+  test(testName, function () {
+    // Checks throwing error
+    noneStrVals.forEach(function (val) {
+      expect(_cb(net.SMB.connect, val)).toThrowError();
+    });
+
+    var comp = '11.22.33.44';
+    var shareName = 'public';
+    var domain = 'PCNAME';
+    var user = 'UserId';
+    var pwd = 'usrP@ss';
+    var retVal;
+
+    // dry-run
+    retVal = net.SMB.connect(comp, shareName, domain, user, pwd, {
+      isDryRun: true
+    });
+    expect(retVal).toContain('dry-run [_shRun]: ' + NET + ' use'
+      + ' \\\\' + comp + '\\' + shareName
+      + ' ' + pwd + ' /user:' + domain + '\\' + user
+      + ' /persistent:no'
+    );
+  });
 
   testName = 'connect';
   test(testName, function () {
@@ -409,6 +463,32 @@ describe('SMB', function () {
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_DELTE_PROCESS;
     retObj = execSync(cmd, { runsAdmin: true });
     expect(retObj.error).toBe(false);
+  });
+
+  testName = 'connectSync_dry-run';
+  test(testName, function () {
+    // Checks throwing error
+    noneStrVals.forEach(function (val) {
+      expect(_cb(net.SMB.connectSync, val)).toThrowError();
+    });
+
+    var comp = '11.22.33.44';
+    var shareName = 'public';
+    var domain = 'PCNAME';
+    var user = 'UserId';
+    var pwd = 'usrP@ss';
+    var retVal;
+
+    // dry-run
+    retVal = net.SMB.connectSync(comp, shareName, domain, user, pwd, {
+      isDryRun: true
+    });
+    expect(retVal).toContain('dry-run [_shRun]: ' + CMD + ' /S /C"'
+      + NET + ' use'
+      + ' \\\\' + comp + '\\' + shareName
+      + ' ' + pwd + ' /user:' + domain + '\\' + user
+      + ' /persistent:no 1> '
+    );
   });
 
   testName = 'connectSync';
@@ -632,6 +712,33 @@ describe('SMB', function () {
     expect(net.SMB.hasConnection(SHARED_NAME)).toBe(false);
   });
 
+  testName = '_getNetUseArgsToDisconnect';
+  test(testName, function () {
+    var args;
+
+    args = net.SMB._getNetUseArgsToDisconnect();
+    expect(args).toEqual(['use', '*', '/delete', '/yes']);
+
+    args = net.SMB._getNetUseArgsToDisconnect('comp');
+    expect(args).toEqual(['use', '\\\\comp', '/delete', '/yes']);
+
+    args = net.SMB._getNetUseArgsToDisconnect('comp', 'shareName');
+    expect(args).toEqual(['use', '\\\\comp\\shareName', '/delete', '/yes']);
+  });
+
+  testName = 'disconnect_dry-run';
+  test(testName, function () {
+    var comp = '11.22.33.44';
+    var shareName = 'public';
+    var retVal;
+
+    // dry-run
+    retVal = net.SMB.disconnect(comp, shareName, { isDryRun: true });
+    expect(retVal).toContain('dry-run [_shRun]: ' + NET + ' use'
+      + ' \\\\' + comp + '\\' + shareName + ' /delete /yes'
+    );
+  });
+
   testName = 'disconnect';
   test(testName, function () {
     var cmd, retObj;
@@ -669,6 +776,19 @@ describe('SMB', function () {
     expect(retObj.error).toBe(false);
   });
 
+  testName = 'disconnectSync_dry-run';
+  test(testName, function () {
+    var comp = '11.22.33.44';
+    var shareName = 'public';
+    var retVal;
+
+    // dry-run
+    retVal = net.SMB.disconnectSync(comp, shareName, { isDryRun: true });
+    expect(retVal).toContain('dry-run [_shRun]: ' + CMD + ' /S /C"'
+      + NET + ' use' + ' \\\\' + comp + '\\' + shareName + ' /delete /yes 1> '
+    );
+  });
+
   testName = 'disconnectSync';
   test(testName, function () {
     var cmd, retObj;
@@ -703,6 +823,35 @@ describe('SMB', function () {
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_DELTE_PROCESS;
     retObj = execSync(cmd, { runsAdmin: true });
     expect(retObj.error).toBe(false);
+  });
+
+  testName = 'connectSyncSurely_dry-run';
+  test(testName, function () {
+    // Checks throwing error
+    noneStrVals.forEach(function (val) {
+      expect(_cb(net.SMB.connectSyncSurely, val)).toThrowError();
+    });
+
+    var comp = '11.22.33.44';
+    var shareName = 'public';
+    var domain = 'PCNAME';
+    var user = 'UserId';
+    var pwd = 'usrP@ss';
+    var retVal;
+
+    // dry-run
+    retVal = net.SMB.connectSyncSurely(comp, shareName, domain, user, pwd, {
+      isDryRun: true
+    });
+    expect(retVal).toContain('dry-run [_shRun]: ' + CMD + ' /S /C"'
+      + NET + ' use' + ' \\\\' + comp + '\\' + shareName + ' /delete /yes 1> '
+    );
+    expect(retVal).toContain('dry-run [_shRun]: ' + CMD + ' /S /C"'
+      + NET + ' use'
+      + ' \\\\' + comp + '\\' + shareName
+      + ' ' + pwd + ' /user:' + domain + '\\' + user
+      + ' /persistent:no 1> '
+    );
   });
 
   testName = 'connectSyncSurely';

@@ -1,5 +1,4 @@
 ﻿/* globals Wsh: false */
-/* globals process: false */
 
 (function () {
   if (Wsh && Wsh.Net) return;
@@ -63,8 +62,8 @@
    * @returns {boolean}
    */
   net.respondsHost = function (host) {
-    var functionName = 'net.respondsHost';
-    if (!isSolidString(host)) throwErrNonStr(functionName, host);
+    var FN = 'net.respondsHost';
+    if (!isSolidString(host)) throwErrNonStr(FN, host);
 
     var retObj = execSync('"' + os.exefiles.ping + '" ' + host);
 
@@ -227,8 +226,8 @@
    * @returns {boolean} - If DHCP enabling, returns true.
    */
   net.enablesDHCP = function (macAddress, options) {
-    var functionName = 'net.enablesDHCP';
-    if (!isSolidString(macAddress)) throwErrNonStr(functionName, macAddress);
+    var FN = 'net.enablesDHCP';
+    if (!isSolidString(macAddress)) throwErrNonStr(FN, macAddress);
 
     var adapters = net.getAdaptersPropsObjs(macAddress, options);
     var adapterObjs = os.WMI.toJsObjects(adapters);
@@ -469,21 +468,23 @@
    * @function exportWinFirewallSettings
    * @memberof Wsh.Net
    * @param {string} destPath - Recommend the extension .wfw
-   * @returns {object} - See {@link https://docs.tuckn.net/WshChildProcess/global.html#typeRunSyncReturn|typeRunSyncReturn}
+   * @param {object} [options] - Optional parameters.
+   * @param {boolean} [options.isDryRun=false] - No execute, returns the string of command.
+   * @returns {object|string} - See {@link https://docs.tuckn.net/WshChildProcess/global.html#typeRunSyncReturn|typeRunSyncReturn}. If options.isDryRun is true, returns string.
    */
-  net.exportWinFirewallSettings = function (destPath) {
-    var functionName = 'net.exportWinFirewallSettings';
-    if (!isSolidString(destPath)) throwErrNonStr(functionName, destPath);
-
-    if (!process.isAdmin()) {
-      throw new Error('Error: [NoAdminRights]\n'
-        + '  at ' + functionName + ' (' + MODULE_TITLE + ')');
-    }
+  net.exportWinFirewallSettings = function (destPath, options) {
+    var FN = 'net.exportWinFirewallSettings';
+    if (!isSolidString(destPath)) throwErrNonStr(FN, destPath);
 
     var pathToExport = path.resolve(destPath);
-
     var args = ['advfirewall', 'export', pathToExport];
-    return execFileSync(NETSH_EXE, args, { runsAdmin: true, winStyle: 'hidden' });
+    var isDryRun = obtain(options, 'isDryRun', false);
+
+    return execFileSync(NETSH_EXE, args, {
+      runsAdmin: true,
+      winStyle: 'hidden',
+      isDryRun: isDryRun
+    });
   }; // }}}
 
   // Update
@@ -495,18 +496,21 @@
    * @example
    * var net = Wsh.Net; // Shorthand
    *
-   * net.setIpAddress('Ethernet 1', ip, mask, defGw); // Returns: true
+   * net.setIpAddress('Ethernet 1', '11.22.33.44', '255.255.0.0', '11.22.33.1')
+   * // Returns: { err, stdout, stderr }
    * @function setIpAddress
    * @memberof Wsh.Net
    * @param {string} netName - The NetConnectionID of the network adapter.
    * @param {string} [ip] - If empty, enable DHCP.
    * @param {string} [mask='255.255.255.0']
    * @param {string} [defGw='']
-   * @returns {object} - See {@link https://docs.tuckn.net/WshChildProcess/global.html#typeRunSyncReturn|typeRunSyncReturn}
+   * @param {object} [options] - Optional parameters.
+   * @param {boolean} [options.isDryRun=false] - No execute, returns the string of command.
+   * @returns {object|string} - See {@link https://docs.tuckn.net/WshChildProcess/global.html#typeRunSyncReturn|typeRunSyncReturn}. If options.isDryRun is true, returns string.
    */
-  net.setIpAddress = function (netName, ip, mask, defGw) {
-    var functionName = 'net.setIpAddress';
-    if (!isSolidString(netName)) throwErrNonStr(functionName, netName);
+  net.setIpAddress = function (netName, ip, mask, defGw, options) {
+    var FN = 'net.setIpAddress';
+    if (!isSolidString(netName)) throwErrNonStr(FN, netName);
 
     var args = ['interface ipv4', 'set address', 'name="' + netName + '"'];
     if (isSolidString(ip)) {
@@ -525,6 +529,8 @@
       args.push('source=dhcp');
     }
 
+    var isDryRun = obtain(options, 'isDryRun', false);
+
     /**
      *  netshコマンドの返値
      *  [成功時]
@@ -540,7 +546,10 @@
           netsh interface ipv4 set address name="LAN Cable" source=dhcp
           DHCP はこのインターフェイスで既に有効です。
      */
-    return execFileSync(NETSH_EXE, args, { winStyle: 'hidden' });
+    return execFileSync(NETSH_EXE, args, {
+      winStyle: 'hidden',
+      isDryRun: isDryRun
+    });
   }; // }}}
 
   // net.setIpAddressesWithWMI {{{
@@ -555,7 +564,7 @@
    * @returns {boolean}
    */
   net.setIpAddressesWithWMI = function (netName, ip, mask, defGw) {
-    var functionName = 'net.setIpAddressesWithWMI';
+    var FN = 'net.setIpAddressesWithWMI';
 
     if (!isSolidString(netName)) {
       netName = net.getAdaptersPropsObjs()[0].NetConnectionID;
@@ -567,7 +576,7 @@
 
     if (wmiObjs.length === 0) {
       throw new Error('Error [EmptyWMI Object Return]\n'
-          + '  at ' + functionName + ' (' + MODULE_TITLE + ')\n'
+          + '  at ' + FN + ' (' + MODULE_TITLE + ')\n'
           + '  query: ' + insp(query));
     }
 
@@ -587,7 +596,7 @@
       //       'hidden', CD.waits.yes);
       // }
     } else {
-      console.log(functionName + ': already DCHP.');
+      console.log(FN + ': already DCHP.');
     }
 
     if (!isSolidString(ip)) {
@@ -605,7 +614,7 @@
     }
 
     if (rtnCode === 1) {
-      console.log(functionName + ':\n'
+      console.log(FN + ':\n'
           + '  Successful completion, reboot required.');
       if (isSolidString(defGw)) rtnCode = wmiObjs[0].SetGateways([defGw]);
       return true;
@@ -613,18 +622,18 @@
 
     if (rtnCode === -66) {
       throw new Error('Error [Invalid SubnetMask]\n'
-          + '  at ' + functionName + ' (' + MODULE_TITLE + ')\n'
+          + '  at ' + FN + ' (' + MODULE_TITLE + ')\n'
           + '  newMask: ' + insp(newMask));
     }
 
     if (rtnCode === -2147180508) {
       throw new Error('Error [WindowOfNetConfig]\n'
-          + '  at ' + functionName + ' (' + MODULE_TITLE + ')\n'
+          + '  at ' + FN + ' (' + MODULE_TITLE + ')\n'
           + '  ネットワーク設定画面を閉じて再試行してください。');
     }
 
     throw new Error('Error [Not Code 0]\n'
-        + '  at ' + functionName + ' (' + MODULE_TITLE + ')\n'
+        + '  at ' + FN + ' (' + MODULE_TITLE + ')\n'
         + '  rtnCode: ' + rtnCode);
   }; // }}}
 
@@ -635,46 +644,60 @@
    * @example
    * var net = Wsh.Net; // Shorthand
    *
-   * net.setDnsServers('Ethernet 1', ip, mask, defGw);
+   * net.setDnsServers('Ethernet 1', '11.22.33.1', '11.22.33.2');
    * @function setDnsServers
    * @memberof Wsh.Net
    * @param {string} netName - The NetConnectionID of the network adapter.
    * @param {string} [dns1] - If empty, enables DHCP.
    * @param {string} [dns2='']
-   * @returns {void}
+   * @param {object} [options] - Optional parameters.
+   * @param {boolean} [options.isDryRun=false] - No execute, returns the string of command.
+   * @returns {void|string} - If options.isDryRun is true, returns string.
    */
-  net.setDnsServers = function (netName, dns1, dns2) {
-    var functionName = 'net.setDnsServers';
-    if (!isSolidString(netName)) throwErrNonStr(functionName, netName);
+  net.setDnsServers = function (netName, dns1, dns2, options) {
+    var FN = 'net.setDnsServers';
+    if (!isSolidString(netName)) throwErrNonStr(FN, netName);
 
     var args1 = ['interface ipv4', 'set dnsservers', 'name="' + netName + '"'];
-
     if (isSolidString(dns1)) {
       args1.push('source=static', 'address=' + dns1, 'register=non', 'validate=no');
     } else {
       args1.push('source=dhcp');
     }
 
-    var rtnObj1 = execFileSync(NETSH_EXE, args1, { winStyle: 'hidden' });
+    var isDryRun = obtain(options, 'isDryRun', false);
 
-    if (rtnObj1.error) {
+    var rtnVal1 = execFileSync(NETSH_EXE, args1, {
+      winStyle: 'hidden',
+      isDryRun: isDryRun
+    });
+
+    if (!isDryRun && rtnVal1.error) {
       throw new Error('Error: [StdErrNotEmpty]\n'
-        + '  at ' + functionName + ' (' + MODULE_TITLE + ')\n'
+        + '  at ' + FN + ' (' + MODULE_TITLE + ')\n'
         + '  exefile: "' + NETSH_EXE + '"\n  args: ' + insp(args1) + '\n'
-        + '  rtnObj: ' + insp(rtnObj1));
+        + '  rtnVal: ' + insp(rtnVal1));
     }
 
-    if (!isSolidString(dns2)) return;
+    if (!isSolidString(dns2)) {
+      if (isDryRun) return 'dry-run [' + FN + ']: ' + rtnVal1;
+      return;
+    }
 
     var args2 = ['interface ipv4', 'add dnsservers', 'name="' + netName + '"', 'address=' + dns2, 'index=2', 'validate=no'];
 
-    var rtnObj2 = execFileSync(NETSH_EXE, args2, { winStyle: 'hidden' });
+    var rtnVal2 = execFileSync(NETSH_EXE, args2, {
+      winStyle: 'hidden',
+      isDryRun: isDryRun
+    });
 
-    if (rtnObj2.error) {
+    if (isDryRun) return 'dry-run [' + FN + ']: ' + rtnVal1 + '\n' + rtnVal2;
+
+    if (rtnVal2.error) {
       throw new Error('Error: [StdErrNotEmpty]\n'
-        + '  at ' + functionName + ' (' + MODULE_TITLE + ')\n'
+        + '  at ' + FN + ' (' + MODULE_TITLE + ')\n'
         + '  exefile: "' + NETSH_EXE + '"\n  args: ' + insp(args2) + '\n'
-        + '  rtnObj: ' + insp(rtnObj2));
+        + '  rtnVal: ' + insp(rtnVal2));
     }
   }; // }}}
 
@@ -689,14 +712,14 @@
    * @returns {boolean}
    */
   net.setDnsServersWithWMI = function (netadpIndex, dnsAdds) {
-    var functionName = 'net.setDnsServersWithWMI';
+    var FN = 'net.setDnsServersWithWMI';
     var query = 'SELECT * FROM Win32_NetworkAdapterConfiguration'
         + ' WHERE IPEnabled = True AND Index = ' + netadpIndex;
     var wmiObjs = os.WMI.execQuery(query);
 
     if (wmiObjs.length === 0) {
       throw new Error('Error [EmptyWMI Object Return]\n'
-          + '  at ' + functionName + ' (' + MODULE_TITLE + ')\n'
+          + '  at ' + FN + ' (' + MODULE_TITLE + ')\n'
           + '  query: ' + insp(query));
     }
 
@@ -706,19 +729,19 @@
     if (rtnCode === 0) return true;
 
     if (rtnCode === 1) {
-      console.log(functionName + ':\n'
+      console.log(FN + ':\n'
           + '  Successful completion, reboot required.');
       return true;
     }
 
     if (rtnCode === -2147180508) {
       throw new Error('Error [WindowOfNetConfig]\n'
-          + '  at ' + functionName + ' (' + MODULE_TITLE + ')\n'
+          + '  at ' + FN + ' (' + MODULE_TITLE + ')\n'
           + '  ネットワーク設定画面を閉じて再試行してください。');
     }
 
     throw new Error('Error [Failed to set SetDNSServerSearchOrder]\n'
-        + '  at ' + functionName + ' (' + MODULE_TITLE + ')\n'
+        + '  at ' + FN + ' (' + MODULE_TITLE + ')\n'
         + '  rtnCode: ' + insp(rtnCode));
   }; // }}}
 
@@ -733,25 +756,28 @@
    * @function exportWinFirewallSettings
    * @memberof Wsh.Net
    * @param {string} srcPath
-   * @returns {object} - See {@link https://docs.tuckn.net/WshChildProcess/global.html#typeRunSyncReturn|typeRunSyncReturn}
+   * @param {object} [options] - Optional parameters.
+   * @param {boolean} [options.isDryRun=false] - No execute, returns the string of command.
+   * @returns {object|string} - See {@link https://docs.tuckn.net/WshChildProcess/global.html#typeRunSyncReturn|typeRunSyncReturn}. If options.isDryRun is true, returns string.
    */
-  net.importWinFirewallSettings = function (srcPath) {
-    var functionName = 'net.importWinFirewallSettings';
-    if (!isSolidString(srcPath)) throwErrNonStr(functionName, srcPath);
+  net.importWinFirewallSettings = function (srcPath, options) {
+    var FN = 'net.importWinFirewallSettings';
+    if (!isSolidString(srcPath)) throwErrNonStr(FN, srcPath);
 
     var pathToImport = path.resolve(srcPath);
 
     if (!fs.statSync(pathToImport).isFile()) {
-      throwErrNonExist(functionName, pathToImport);
-    }
-
-    if (!process.isAdmin()) {
-      throw new Error('Error: [NoAdminRights]\n'
-        + '  at ' + functionName + ' (' + MODULE_TITLE + ')');
+      throwErrNonExist(FN, pathToImport);
     }
 
     var args = ['advfirewall', 'import', pathToImport];
-    return execFileSync(NETSH_EXE, args, { runsAdmin: true, winStyle: 'hidden' });
+    var isDryRun = obtain(options, 'isDryRun', false);
+
+    return execFileSync(NETSH_EXE, args, {
+      runsAdmin: true,
+      winStyle: 'hidden',
+      isDryRun: isDryRun
+    });
   }; // }}}
 
   // Delete
