@@ -27,7 +27,6 @@
   var isSameMeaning = util.isSameMeaning;
   var NET = os.exefiles.net;
   var srrPath = os.surroundPath;
-  var escapeForCmd = os.escapeForCmd;
   var execFile = child_process.execFile;
   var execFileSync = child_process.execFileSync;
 
@@ -323,7 +322,7 @@ C:\>net share Cdrv /delete
     //   throwErrNonStr(FN, pwd);
     // }
 
-    if (isSolidString(pwd)) args.push(escapeForCmd(pwd));
+    if (isSolidString(pwd)) args.push(pwd);
 
     if (isSolidString(user)) {
       if (isSolidString(domain)) {

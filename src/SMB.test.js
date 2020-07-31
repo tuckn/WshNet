@@ -24,6 +24,7 @@ var endsWith = util.startsWith;
 var hasContent = util.hasContent;
 var isSameMeaning = util.isSameMeaning;
 var srr = os.surroundPath;
+var escapeForCmd = os.escapeForCmd;
 var CMD = os.exefiles.cmd;
 var CSCRIPT = os.exefiles.cscript;
 var NET = os.exefiles.net;
@@ -101,7 +102,7 @@ describe('SMB', function () {
 
   // Share
 
-  testName = 'shareDirectory_dry-run';
+  testName = 'shareDirectory_dryRun';
   test(testName, function () {
     // Checks throwing error
     noneStrVals.forEach(function (val) {
@@ -334,7 +335,7 @@ describe('SMB', function () {
     expect(net.SMB.existsShareName(SHARED_NAME)).toBe(false);
   });
 
-  testName = 'delSharedDirectory_dry-run';
+  testName = 'delSharedDirectory_dryRun';
   test(testName, function () {
     // Checks throwing error
     noneStrVals.forEach(function (val) {
@@ -393,10 +394,30 @@ describe('SMB', function () {
       expect(_cb(net.SMB._getNetUseArgsToConnect, val)).toThrowError();
     });
 
-    expect('@TODO').toBe('Tested');
+    var comp;
+    var share;
+    var domain;
+    var user;
+    var pwd;
+    var retArgs;
+
+    comp = '11.22.33.44';
+    share = 'C$';
+    domain = '';
+    user = 'User1';
+    pwd = 'My p@ss';
+    retArgs = net.SMB._getNetUseArgsToConnect(comp, share, domain, user, pwd);
+
+    expect(retArgs).toEqual([
+      'use',
+      '\\\\' + comp + '\\' + share,
+      pwd,
+      '/user:' + user,
+      '/persistent:no'
+    ]);
   });
 
-  testName = 'connect_dry-run';
+  testName = 'connect_dryRun';
   test(testName, function () {
     // Checks throwing error
     noneStrVals.forEach(function (val) {
@@ -407,7 +428,7 @@ describe('SMB', function () {
     var shareName = 'public';
     var domain = 'PCNAME';
     var user = 'UserId';
-    var pwd = 'usrP@ss';
+    var pwd = 'My * P@ss><';
     var retVal;
 
     // dry-run
@@ -416,7 +437,7 @@ describe('SMB', function () {
     });
     expect(retVal).toContain('dry-run [_shRun]: ' + NET + ' use'
       + ' \\\\' + comp + '\\' + shareName
-      + ' ' + pwd + ' /user:' + domain + '\\' + user
+      + ' ' + escapeForCmd(pwd) + ' /user:' + domain + '\\' + user
       + ' /persistent:no'
     );
   });
@@ -465,7 +486,7 @@ describe('SMB', function () {
     expect(retObj.error).toBe(false);
   });
 
-  testName = 'connectSync_dry-run';
+  testName = 'connectSync_dryRun';
   test(testName, function () {
     // Checks throwing error
     noneStrVals.forEach(function (val) {
@@ -476,17 +497,18 @@ describe('SMB', function () {
     var shareName = 'public';
     var domain = 'PCNAME';
     var user = 'UserId';
-    var pwd = 'usrP@ss';
+    var pwd = 'My * P@ss><';
     var retVal;
 
     // dry-run
     retVal = net.SMB.connectSync(comp, shareName, domain, user, pwd, {
       isDryRun: true
     });
+    // console.dir(retVal);
     expect(retVal).toContain('dry-run [_shRun]: ' + CMD + ' /S /C"'
       + NET + ' use'
       + ' \\\\' + comp + '\\' + shareName
-      + ' ' + pwd + ' /user:' + domain + '\\' + user
+      + ' ' + escapeForCmd(pwd) + ' /user:' + domain + '\\' + user
       + ' /persistent:no 1> '
     );
   });
@@ -726,7 +748,7 @@ describe('SMB', function () {
     expect(args).toEqual(['use', '\\\\comp\\shareName', '/delete', '/yes']);
   });
 
-  testName = 'disconnect_dry-run';
+  testName = 'disconnect_dryRun';
   test(testName, function () {
     var comp = '11.22.33.44';
     var shareName = 'public';
@@ -776,7 +798,7 @@ describe('SMB', function () {
     expect(retObj.error).toBe(false);
   });
 
-  testName = 'disconnectSync_dry-run';
+  testName = 'disconnectSync_dryRun';
   test(testName, function () {
     var comp = '11.22.33.44';
     var shareName = 'public';
@@ -825,7 +847,7 @@ describe('SMB', function () {
     expect(retObj.error).toBe(false);
   });
 
-  testName = 'connectSyncSurely_dry-run';
+  testName = 'connectSyncSurely_dryRun';
   test(testName, function () {
     // Checks throwing error
     noneStrVals.forEach(function (val) {
