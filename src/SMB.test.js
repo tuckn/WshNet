@@ -16,13 +16,9 @@ var fse = Wsh.FileSystemExtra;
 var child_process = Wsh.ChildProcess;
 var net = Wsh.Net;
 
-var insp = util.inspect;
 var isSolidArray = util.isSolidArray;
 var isSolidString = util.isSolidString;
 var includes = util.includes;
-var endsWith = util.startsWith;
-var hasContent = util.hasContent;
-var isSameMeaning = util.isSameMeaning;
 var srr = os.surroundPath;
 var escapeForCmd = os.escapeForCmd;
 var CMD = os.exefiles.cmd;
@@ -32,7 +28,6 @@ var execSync = child_process.execSync;
 var execFileSync = child_process.execFileSync;
 
 var noneStrVals = [true, false, undefined, null, 0, 1, NaN, Infinity, [], {}];
-var noneObjVals = [true, false, undefined, null, 0, 1, NaN, Infinity, [], ''];
 var testCmd = srr(CSCRIPT) + ' ' + srr(__filename) + ' //job:test:SMB';
 
 var _cb = function (fn/* , args */) {

@@ -1,5 +1,4 @@
 ﻿/* globals Wsh: false */
-/* globals process: false */
 
 (function () {
   if (Wsh && Wsh.Net.SMB) return;
