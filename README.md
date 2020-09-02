@@ -246,7 +246,6 @@ You can also use the following useful functions in _.\\MyScript.js_ (JScript).
 - [tuckn/WshProcess](https://github.com/tuckn/WshProcess)
 - [tuckn/WshChildProcess](https://github.com/tuckn/WshChildProcess)
 
-
 ## Documentation
 
 See all specifications [here](https://docs.tuckn.net/WshNet) and also below.
@@ -261,7 +260,7 @@ See all specifications [here](https://docs.tuckn.net/WshNet) and also below.
 
 ## TODO
 
-* Test the functions of setting network.
+- Test the functions of setting network.
 
 ## License
 

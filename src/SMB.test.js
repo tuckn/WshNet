@@ -121,7 +121,8 @@ describe('SMB', function () {
       remark: REMARK,
       isDryRun: true
     });
-    expect(retVal).toContain('dry-run [os.runAsAdmin]: ' + CMD + ' /S /C"'
+    expect(retVal).toContain('dry-run');
+    expect(retVal).toContain(CMD + ' /S /C"'
       + NET + ' share ' + SHARED_NAME + '=' + sharedDir
       + ' /GRANT:Everyone,' + GRANT
       + ' "/REMARK:' + REMARK + '" 1> ');
@@ -342,7 +343,8 @@ describe('SMB', function () {
 
     // dry-run
     retVal = net.SMB.delSharedDirectory(SHARED_NAME, { isDryRun: true });
-    expect(retVal).toContain('dry-run [os.runAsAdmin]: ' + CMD + ' /S /C"'
+    expect(retVal).toContain('dry-run');
+    expect(retVal).toContain(CMD + ' /S /C"'
       + NET + ' share ' + SHARED_NAME + ' /DELETE /YES 1> ');
   });
 

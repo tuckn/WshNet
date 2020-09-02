@@ -155,7 +155,7 @@ describe('Net', function () {
 
     // dry-run
     retVal = net.exportWinFirewallSettings(fwPath, { isDryRun: true });
-    expect(retVal).toContain('[os.runAsAdmin]: ' + CMD + ' /S /C"'
+    expect(retVal).toContain(CMD + ' /S /C"'
       + NETSH_EXE + ' advfirewall export ' + fwPath + ' 1> ');
 
     retVal = net.exportWinFirewallSettings(fwPath);
@@ -251,7 +251,7 @@ describe('Net', function () {
 
     // dry-run
     retVal = net.importWinFirewallSettings(fwPath, { isDryRun: true });
-    expect(retVal).toContain('[os.runAsAdmin]: ' + CMD + ' /S /C"'
+    expect(retVal).toContain(CMD + ' /S /C"'
       + NETSH_EXE + ' advfirewall import ' + fwPath + ' 1> ');
 
     // Cleans
