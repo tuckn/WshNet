@@ -81,10 +81,11 @@ Awesome! This WSH configuration allows you to use the following functions in JSc
 
 ## Usage
 
-Now your JScript (_.\\MyScript.js_ ) can use helper functions to handle Windows Networs.
+Now your JScript (_.\\MyScript.js_ ) can use helper functions to handle Windows Networks.
 For example,
 
 ```js
+// @NOTE SOME FUNCTIONS REQUIRE ADMIN PRIVILEDGES TO EXECUTE.
 var net = Wsh.Net; // Shorthand
 
 var adapters = net.getAdaptersPropsSWbemObjs();
@@ -164,6 +165,7 @@ net.importWinFirewallSettings('D:\\backup.wfw');
 ### SMB (Server Message Block)
 
 ```js
+// @NOTE SOME FUNCTIONS REQUIRE ADMIN PRIVILEDGES TO EXECUTE.
 var smb = Wsh.Net.SMB; // Shorthand
 
 // Shares the directory of this Windows (Requires admin rights).
