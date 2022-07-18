@@ -25,9 +25,9 @@
   var isSolidString = util.isSolidString;
   var isSameMeaning = util.isSameMeaning;
   var NET = os.exefiles.net;
-  var srrPath = os.surroundPath;
-  var execFile = child_process.execFile;
-  var execFileSync = child_process.execFileSync;
+  var srrd = os.surroundCmdArg;
+  var exec = child_process.exec;
+  var execSync = child_process.execSync;
 
   /** @constant {string} */
   var MODULE_TITLE = 'WshNet/SMB.js';
@@ -71,6 +71,7 @@
    * @param {string} [options.userName='Everyone'] - The user name with which to access.
    * @param {string} [options.grant='READ'] - READ, CHANGE(Can not controll authority), FULL.
    * @param {string} [options.remark=''] - Annotation.
+   * @param {(boolean|undefined)} [options.runsAdmin=true] - true: as Admin, false: as User
    * @param {boolean} [options.isDryRun=false] - No execute, returns the string of command.
    * @returns {object|string} - See {@link https://docs.tuckn.net/WshChildProcess/global.html#typeRunSyncReturn|typeRunSyncReturn}. If options.isDryRun is true, returns string.
    */
@@ -82,19 +83,21 @@
       throwErrNonExist(FN, dirPath);
     }
 
-    var args = ['share', srrPath(shareName) + '=' + srrPath(dirPath)];
+    var argsStr = 'share ' + srrd(shareName) + '=' + srrd(dirPath);
 
     var userName = obtain(options, 'userName', 'Everyone');
     var grant = obtain(options, 'grant', 'READ');
     if (isSolidString(userName) && isSolidString(grant)) {
-      args.push('/GRANT:' + userName + ',' + grant);
+      argsStr += ' /GRANT:' + userName + ',' + grant;
     }
 
     var remark = obtain(options, 'remark', '');
     if (isSolidString(remark)) {
-      args.push('/REMARK:' + remark);
+      argsStr += ' /REMARK:' + srrd(remark);
     }
 
+    var command = srrd(NET) + ' ' + argsStr;
+    var runsAdmin = obtain(options, 'runsAdmin', true);
     var isDryRun = obtain(options, 'isDryRun', false);
 
     /*
@@ -113,8 +116,8 @@
           StdErr: "名前は既に共有されています。
             NET HELPMSG 2118 と入力すると、より詳しい説明が得られます。"
      */
-    return execFileSync(NET, args, {
-      runsAdmin: true,
+    return execSync(command, {
+      runsAdmin: runsAdmin,
       winStyle: 'hidden',
       isDryRun: isDryRun
     });
@@ -130,10 +133,15 @@
    * smb.showLocalShares(); // Shows a window
    * @function showLocalShares
    * @memberof Wsh.Net.SMB
+   * @param {object} [options] - Optional parameters.
+   * @param {(number|string)} [options.winStyle='activeDef'] - See {@link https://docs.tuckn.net/WshUtil/Wsh.Constants.windowStyles.html|Wsh.Constants.windowStyles}.
    * @returns {void}
    */
-  net.SMB.showLocalShares = function () {
-    execFile(NET, ['share'], { shell: true, closes: false });
+  net.SMB.showLocalShares = function (options) {
+    var winStyle = obtain(options, 'winStyle', 'activeDef');
+    var command = srrd(NET) + ' share';
+
+    exec(command, { closes: false, winStyle: winStyle });
   }; // }}}
 
   // net.SMB.getLocalSharesSWbemObjs {{{
@@ -251,6 +259,7 @@
    * @memberof Wsh.Net.SMB
    * @param {string} shareName - The share name to delete.
    * @param {object} [options] - Optional parameters.
+   * @param {(boolean|undefined)} [options.runsAdmin=true] - true: as Admin, false: as User
    * @param {boolean} [options.isDryRun=false] - No execute, returns the string of command.
    * @returns {object|string} - See {@link https://docs.tuckn.net/WshChildProcess/global.html#typeRunSyncReturn|typeRunSyncReturn}. If options.isDryRun is true, returns string.
    */
@@ -267,8 +276,10 @@ C:\>net share Cdrv /delete
 この操作を続行しますか? (Y/N) [N]:
      * に応答できずスクリプトが終了しなくなる。
      */
-    var args = ['share', shareName, '/DELETE', '/YES'];
+    var argsStr = 'share ' + srrd(shareName) + ' /DELETE /YES';
 
+    var command = srrd(NET) + ' ' + argsStr;
+    var runsAdmin = obtain(options, 'runsAdmin', true);
     var isDryRun = obtain(options, 'isDryRun', false);
 
     /*
@@ -283,8 +294,8 @@ C:\>net share Cdrv /delete
           StdErr: "この共有リソースは存在しません。
             NET HELPMSG 2310 と入力すると、より詳しい説明が得られます。"
      */
-    return execFileSync(NET, args, {
-      runsAdmin: true,
+    return execSync(command, {
+      runsAdmin: runsAdmin,
       winStyle: 'hidden',
       isDryRun: isDryRun
     });
@@ -292,7 +303,7 @@ C:\>net share Cdrv /delete
 
   // Connection
 
-  // net.SMB._getNetUseArgsToConnect {{{
+  // net.SMB._getNetUseArgsStrToConnect {{{
   /**
    * Gets net use args to connect a comp to the share resource. {@link https://technet.microsoft.com/ja-jp/library/gg651155(v=ws.10).aspx|Microsoft Docs}. {@link https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-r2-and-2012/gg651155(v%3Dws.11)|Microsoft Docs}
    *
@@ -302,18 +313,18 @@ C:\>net share Cdrv /delete
    * @param {string} [domain=''] - The domain name. If it is empty, uses the current logged on domain.
    * @param {string} [user] - The user name with which to log on.
    * @param {string} [pwd] - The password. *: produce a prompt for the password.
-   * @returns {string[]}
+   * @returns {string}
    */
-  net.SMB._getNetUseArgsToConnect = function (comp, shareName, domain, user, pwd) {
-    var FN = 'net.SMB._getNetUseArgsToConnect';
+  net.SMB._getNetUseArgsStrToConnect = function (comp, shareName, domain, user, pwd) {
+    var FN = 'net.SMB._getNetUseArgsStrToConnect';
     if (!isSolidString(comp)) throwErrNonStr(FN, comp);
 
-    var args = ['use'];
+    var argsStr = 'use';
 
     if (isSolidString(shareName)) {
-      args.push('\\\\' + comp + '\\' + shareName); // Shared Name
+      argsStr += ' ' + srrd('\\\\' + comp + '\\' + shareName); // Shared Name
     } else {
-      args.push('\\\\' + comp + '\\' + net.SMB.IPC);
+      argsStr += ' ' + srrd('\\\\' + comp + '\\' + net.SMB.IPC);
     }
 
     // @TODO Get a password with a hidden dialog?
@@ -321,20 +332,20 @@ C:\>net share Cdrv /delete
     //   throwErrNonStr(FN, pwd);
     // }
 
-    if (isSolidString(pwd)) args.push(pwd);
+    if (isSolidString(pwd)) argsStr += ' ' + srrd(os.escapeForCmd(pwd));
 
     if (isSolidString(user)) {
       if (isSolidString(domain)) {
-        args.push('/user:' + domain + '\\' + user);
+        argsStr += ' /user:' + domain + '\\' + user;
       } else {
-        args.push('/user:' + user);
+        argsStr += ' /user:' + user;
       }
     }
 
-    args.push('/persistent:no'); // presistent: ->Save this connection
+    argsStr += ' /persistent:no'; // presistent: ->Save this connection
     // console.log(args); // Debug
 
-    return args;
+    return argsStr;
   }; // }}}
 
   // net.SMB.connect {{{
@@ -359,14 +370,24 @@ C:\>net share Cdrv /delete
    * @param {string} [user] - The user name with which to log on.
    * @param {string} [pwd] - The password. @TODO If * produce a prompt for the password.
    * @param {object} [options] - Optional parameters.
+   * @param {(boolean|undefined)} [options.runsAdmin] - true: as Admin, false: as User
    * @param {boolean} [options.isDryRun=false] - No execute, returns the string of command.
-   * @returns {number|string} - The result code from `net use`. If options.isDryRun is true, returns string.
+   * @returns {0|string} - If options.isDryRun is true, returns string.
    */
   net.SMB.connect = function (comp, shareName, domain, user, pwd, options) {
-    var args = net.SMB._getNetUseArgsToConnect(comp, shareName, domain, user, pwd);
+    var argsStr = net.SMB._getNetUseArgsStrToConnect(
+      comp,
+      shareName,
+      domain,
+      user,
+      pwd
+    );
+    var command = srrd(NET) + ' ' + argsStr;
+    var runsAdmin = obtain(options, 'runsAdmin', null);
     var isDryRun = obtain(options, 'isDryRun', false);
 
-    return execFile(NET, args, {
+    return exec(command, {
+      runsAdmin: runsAdmin,
       winStyle: 'hidden',
       isDryRun: isDryRun
     });
@@ -396,11 +417,20 @@ C:\>net share Cdrv /delete
    * @param {string} [user] - The user name with which to log on.
    * @param {string} [pwd] - The password. *: produce a prompt for the password.
    * @param {object} [options] - Optional parameters.
+   * @param {(boolean|undefined)} [options.runsAdmin] - true: as Admin, false: as User
    * @param {boolean} [options.isDryRun=false] - No execute, returns the string of command.
    * @returns {object|string} - See {@link https://docs.tuckn.net/WshChildProcess/global.html#typeRunSyncReturn|typeRunSyncReturn}. If options.isDryRun is true, returns string.
    */
   net.SMB.connectSync = function (comp, shareName, domain, user, pwd, options) {
-    var args = net.SMB._getNetUseArgsToConnect(comp, shareName, domain, user, pwd);
+    var argsStr = net.SMB._getNetUseArgsStrToConnect(
+      comp,
+      shareName,
+      domain,
+      user,
+      pwd
+    );
+    var command = srrd(NET) + ' ' + argsStr;
+    var runsAdmin = obtain(options, 'runsAdmin', null);
     var isDryRun = obtain(options, 'isDryRun', false);
 
     /*
@@ -413,7 +443,8 @@ stdout: "",
 stderr: "システム エラー 1219 が発生しました。
 同じユーザーによる、サーバーまたは共有リソースへの複数のユーザー名での複数の接続は許可されません。サーバーまたは共有リソースへの以前の接続をすべて切断してから、再試行してください。",
      */
-    return execFileSync(NET, args, {
+    return execSync(command, {
+      runsAdmin: runsAdmin,
       winStyle: 'hidden',
       isDryRun: isDryRun
     });
@@ -429,15 +460,20 @@ stderr: "システム エラー 1219 が発生しました。
    * smb.showCurrentSession(); // Shows a `net use` window
    * @function showCurrentSession
    * @memberof Wsh.Net.SMB
+   * @param {object} [options] - Optional parameters.
+   * @param {(number|string)} [options.winStyle='activeDef'] - See {@link https://docs.tuckn.net/WshUtil/Wsh.Constants.windowStyles.html|Wsh.Constants.windowStyles}.
    * @returns {void}
    */
-  net.SMB.showCurrentSession = function () {
-    execFile(NET, ['use'], { shell: true, closes: false });
+  net.SMB.showCurrentSession = function (options) {
+    var winStyle = obtain(options, 'winStyle', 'activeDef');
+    var command = srrd(NET) + ' use';
+
+    exec(command, { closes: false, winStyle: winStyle });
   }; // }}}
 
   // net.SMB.getActiveConnectionsSwbemObjs {{{
   /**
-   * Gets an Array of Enumerated-SWbemObjectSet of network connections on the Windows. See {@link https://docs.microsoft.com/en-us/windows/win32/cimwin32prov/win32-networkconnection|Win32_NetworkConnection class}.
+   * [REQUIRE ADMIN] Gets an Array of Enumerated-SWbemObjectSet of network connections on the Windows. See {@link https://docs.microsoft.com/en-us/windows/win32/cimwin32prov/win32-networkconnection|Win32_NetworkConnection class}.
    *
    * @example
    * var smb = Wsh.Net.SMB; // Shorthand
@@ -486,7 +522,7 @@ stderr: "システム エラー 1219 が発生しました。
    */
 
   /**
-   * Gets an Array of objects of network connections on the Windows.
+   * [REQUIRE ADMIN] Gets an Array of objects of network connections on the Windows.
    *
    * @example
    * var smb = Wsh.Net.SMB; // Shorthand
@@ -528,6 +564,8 @@ stderr: "システム エラー 1219 が発生しました。
 
   // net.SMB.hasConnection {{{
   /**
+   * [REQUIRE ADMIN]
+   *
    * @example
    * var smb = Wsh.Net.SMB; // Shorthand
    *
@@ -552,33 +590,33 @@ stderr: "システム エラー 1219 が発生しました。
     });
   }; // }}}
 
-  // net.SMB._getNetUseArgsToDisconnect {{{
+  // net.SMB._getNetUseArgsStrToDisconnect {{{
   /**
    * Gets net use args to disconnect a comp from the share resource
    *
    * @private
    * @param {string} [comp] - The computer name. * is all
    * @param {string} [shareName] - The share Name
-   * @returns {string[]}
+   * @returns {string}
    */
-  net.SMB._getNetUseArgsToDisconnect = function (comp, shareName) {
-    var args = ['use'];
+  net.SMB._getNetUseArgsStrToDisconnect = function (comp, shareName) {
+    var argsStr = 'use';
 
     if (isSolidString(comp)) {
       if (isSolidString(shareName)) {
-        args.push('\\\\' + comp + '\\' + shareName);
+        argsStr += ' ' + srrd('\\\\' + comp + '\\' + shareName);
       } else {
-        args.push('\\\\' + comp);
+        argsStr += ' ' + srrd('\\\\' + comp);
       }
     } else {
       // *\IPC$ という指定は不可なので、compが空なら * にする
-      args.push('*');
+      argsStr += ' *';
     }
 
-    args.push('/delete');
-    args.push('/yes');
+    argsStr += ' /delete';
+    argsStr += ' /yes';
 
-    return args;
+    return argsStr;
   }; // }}}
 
   // net.SMB.disconnect {{{
@@ -589,21 +627,26 @@ stderr: "システム エラー 1219 が発生しました。
    * var smb = Wsh.Net.SMB; // Shorthand
    *
    * smb.disconnect('11.22.33.44', 'C$');
-   * // Returns a number immediately and asynchronously executes:
+   * // Returns 0 immediately and asynchronously executes:
    * // `net.exe use \\\\11.22.33.44\\C$ /delete`
    * @function disconnect
    * @memberof Wsh.Net.SMB
    * @param {string} [comp] - The computer name or IP address. * is all
    * @param {string} [shareName] - The share Name
    * @param {object} [options] - Optional parameters.
+   * @param {(boolean|undefined)} [options.runsAdmin] - true: as Admin, false: as User
    * @param {boolean} [options.isDryRun=false] - No execute, returns the string of command.
-   * @returns {number|string} - The result code from `net use`. If options.isDryRun is true, returns string.
+   * @returns {0|string} - If options.isDryRun is true, returns string.
    */
   net.SMB.disconnect = function (comp, shareName, options) {
-    var args = net.SMB._getNetUseArgsToDisconnect(comp, shareName);
+    var FN = 'net.SMB.disconnect';
+    var argsStr = net.SMB._getNetUseArgsStrToDisconnect(comp, shareName);
+    var command = srrd(NET) + ' ' + argsStr;
+    var runsAdmin = obtain(options, 'runsAdmin', null);
     var isDryRun = obtain(options, 'isDryRun', false);
 
-    return execFile(NET, args, {
+    return exec(command, {
+      runsAdmin: runsAdmin,
       winStyle: 'hidden',
       isDryRun: isDryRun
     });
@@ -630,7 +673,9 @@ stderr: "システム エラー 1219 が発生しました。
    */
   net.SMB.disconnectSync = function (comp, shareName, options) {
     var FN = 'net.SMB.disconnectSync';
-    var args = net.SMB._getNetUseArgsToDisconnect(comp, shareName);
+    var argsStr = net.SMB._getNetUseArgsStrToDisconnect(comp, shareName);
+    var command = srrd(NET) + ' ' + argsStr;
+    var runsAdmin = obtain(options, 'runsAdmin', null);
     var isDryRun = obtain(options, 'isDryRun', false);
 
     /*
@@ -649,17 +694,18 @@ stderr: "システム エラー 1219 が発生しました。
      * stderr: "ネットワーク接続が見つかりませんでした。
      * NET HELPMSG 2250 と入力すると、より詳しい説明が得られます。",
      */
-    var rtnVal = execFileSync(NET, args, {
+    var rtn = execSync(command, {
+      runsAdmin: runsAdmin,
       winStyle: 'hidden',
       isDryRun: isDryRun
     });
 
-    if (isDryRun) return 'dry-run [' + FN + ']: ' + rtnVal;
+    if (isDryRun) return 'dry-run [' + FN + ']: ' + rtn;
 
     // @note 接続が見つからないなら成功でいいよね？
-    if (/NET HELPMSG 2250/i.test(rtnVal.stderr)) rtnVal.error = false;
+    if (/NET HELPMSG 2250/i.test(rtn.stderr)) rtn.error = false;
 
-    return rtnVal;
+    return rtn;
   }; // }}}
 
   // net.SMB.connectSyncSurely {{{

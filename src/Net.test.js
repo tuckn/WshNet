@@ -32,12 +32,12 @@ describe('Net', function () {
 
   testName = 'respondsHost';
   test(testName, function () {
-    expect(net.respondsHost('127.0.0.1')).toBe(true);
-    expect(net.respondsHost('127.0.0.0')).toBe(false);
-
     noneStrVals.forEach(function (val) {
       expect(_cb(net.respondsHost, val)).toThrowError();
     });
+
+    expect(net.respondsHost('127.0.0.1')).toBe(true);
+    expect(net.respondsHost('127.0.0.0')).toBe(false);
   });
 
   testName = 'showIpConfigAll';
@@ -156,7 +156,7 @@ describe('Net', function () {
     // dry-run
     retVal = net.exportWinFirewallSettings(fwPath, { isDryRun: true });
     expect(retVal).toContain(CMD + ' /S /C"'
-      + NETSH_EXE + ' advfirewall export ' + fwPath + ' 1> ');
+      + NETSH_EXE + ' advfirewall export ' + fwPath + ' 1>');
 
     retVal = net.exportWinFirewallSettings(fwPath);
     expect(retVal.error).toBeFalsy();
@@ -185,12 +185,12 @@ describe('Net', function () {
     // dry-run
     retVal = net.setIpAddress(netName, ip, mask, defGw, { isDryRun: true });
     expect(retVal).toContain('dry-run [_shRun]: ' + CMD + ' /S /C"'
-      + NETSH_EXE + ' "interface ipv4" "set address"'
-      + ' "name=\\"' + netName + '\\""'
-      + ' "source=static address=' + ip + '" mask=' + mask
-      + ' gateway=' + defGw + ' gwmetric=1 1> ');
+      + NETSH_EXE + ' interface ipv4 set address'
+      + ' name="' + netName + '"'
+      + ' source=static address=' + ip + ' mask=' + mask
+      + ' gateway=' + defGw + ' gwmetric=1 1>');
 
-    expect('@TODO').toBe('Testing on virtual adapter');
+    expect('@TODO').toBe('tested on virtual adapter');
   });
 
   testName = 'setDnsServers';
@@ -205,34 +205,34 @@ describe('Net', function () {
     // dry-run
     retVal = net.setDnsServers(netName, null, null, { isDryRun: true });
     expect(retVal).toContain('dry-run [_shRun]: ' + CMD + ' /S /C"'
-      + NETSH_EXE + ' "interface ipv4" "set dnsservers"'
-      + ' "name=\\"' + netName + '\\""'
-      + ' source=dhcp 1> ');
+      + NETSH_EXE + ' interface ipv4 set dnsservers'
+      + ' name="' + netName + '"'
+      + ' source=dhcp 1>');
 
     var dns1 = '11.22.33.1';
 
     // dry-run
     retVal = net.setDnsServers(netName, dns1, dns2, { isDryRun: true });
     expect(retVal).toContain('dry-run [_shRun]: ' + CMD + ' /S /C"'
-      + NETSH_EXE + ' "interface ipv4" "set dnsservers"'
-      + ' "name=\\"' + netName + '\\""'
-      + ' source=static address=' + dns1 + ' register=non validate=no 1> ');
+      + NETSH_EXE + ' interface ipv4 set dnsservers'
+      + ' name="' + netName + '"'
+      + ' source=static address=' + dns1 + ' register=non validate=no 1>');
 
     var dns2 = '11.22.33.2';
 
     // dry-run
     retVal = net.setDnsServers(netName, dns1, dns2, { isDryRun: true });
     expect(retVal).toContain(CMD + ' /S /C"'
-      + NETSH_EXE + ' "interface ipv4" "add dnsservers"'
-      + ' "name=\\"' + netName + '\\""'
-      + ' address=' + dns2 + ' index=2 validate=no 1> ');
+      + NETSH_EXE + ' interface ipv4 add dnsservers'
+      + ' name="' + netName + '"'
+      + ' address=' + dns2 + ' index=2 validate=no 1>');
 
-    expect('@TODO').toBe('Testing on virtual adapter');
+    expect('@TODO').toBe('tested on virtual adapter');
   });
 
   testName = 'setDnsServersWithWMI';
   test(testName, function () {
-    expect('@TODO').toBe('Testing on virtual adapter');
+    expect('@TODO').toBe('tested on virtual adapter');
   });
 
   testName = 'importWinFirewallSettings';
@@ -252,13 +252,13 @@ describe('Net', function () {
     // dry-run
     retVal = net.importWinFirewallSettings(fwPath, { isDryRun: true });
     expect(retVal).toContain(CMD + ' /S /C"'
-      + NETSH_EXE + ' advfirewall import ' + fwPath + ' 1> ');
+      + NETSH_EXE + ' advfirewall import ' + fwPath + ' 1>');
 
     // Cleans
     fse.removeSync(fwPath);
     expect(fs.existsSync(fwPath)).toBe(false);
 
-    expect('@TODO').toBe('Testing on virtual Window');
+    expect('@TODO').toBe('tested on virtual Window');
   });
 
   // Delete

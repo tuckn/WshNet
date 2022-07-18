@@ -19,7 +19,7 @@ var net = Wsh.Net;
 var isSolidArray = util.isSolidArray;
 var isSolidString = util.isSolidString;
 var includes = util.includes;
-var srr = os.surroundPath;
+var srrd = os.surroundCmdArg;
 var escapeForCmd = os.escapeForCmd;
 var CMD = os.exefiles.cmd;
 var CSCRIPT = os.exefiles.cscript;
@@ -28,7 +28,7 @@ var execSync = child_process.execSync;
 var execFileSync = child_process.execFileSync;
 
 var noneStrVals = [true, false, undefined, null, 0, 1, NaN, Infinity, [], {}];
-var testCmd = srr(CSCRIPT) + ' ' + srr(__filename) + ' //job:test:SMB';
+var testCmd = srrd(CSCRIPT) + ' ' + srrd(__filename) + ' //job:test:SMB';
 
 var _cb = function (fn/* , args */) {
   var args = Array.from(arguments).slice(1);
@@ -42,7 +42,6 @@ var _shareDir = function (shareName, sharedDir, grant, remark) {
 
     var retObj = net.SMB.shareDirectory(shareName, sharedDir,
       { grant: grant, remark: remark });
-    // console.dir(retObj);
 
     process.exit(CD.runs.ok);
   }
@@ -56,7 +55,6 @@ var _delShareDir = function (shareName, sharedDir) {
     // Delete the share
     var args = ['share', shareName, '/DELETE', '/YES'];
     var retObj = execFileSync(NET, args, { winStyle: 'hidden' });
-    // console.dir(retObj);
 
     // Removes the directory
     fse.removeSync(sharedDir);
@@ -71,7 +69,6 @@ var _delShareDir = function (shareName, sharedDir) {
 var _connect = function (testName, sharedDir, sharedName) {
   // Connects
   var retObj = net.SMB.connectSync(process.env.COMPUTERNAME, sharedName);
-  // console.dir(retObj);
 
   // Checks
   var smbPath = '\\\\' + process.env.COMPUTERNAME + '\\' + sharedName;
@@ -105,27 +102,27 @@ describe('SMB', function () {
       expect(_cb(net.SMB.shareDirectory, 'SharedName', val)).toThrowError();
     });
 
-    var SHARED_NAME = 'ShareName_' + testName;
-    var GRANT = 'CHANGE';
-    var REMARK = 'Share for ' + testName;
-    var sharedDir = os.makeTmpPath() + '_dir';
+    var sharedName = 'Temp shared ' + testName;
+    var grantType = 'CHANGE';
+    var remark = 'Shared dir for testing ' + testName;
+    var sharedDir = os.makeTmpPath() + ' for testing ' + testName;
 
-    expect(_cb(net.SMB.shareDirectory, SHARED_NAME, sharedDir)).toThrowError();
+    expect(_cb(net.SMB.shareDirectory, sharedName, sharedDir)).toThrowError();
 
     fse.ensureDirSync(sharedDir);
-    var retVal;
+    var rtn;
 
     // dry-run
-    retVal = net.SMB.shareDirectory(SHARED_NAME, sharedDir, {
-      grant: GRANT,
-      remark: REMARK,
+    rtn = net.SMB.shareDirectory(sharedName, sharedDir, {
+      grant: grantType,
+      remark: remark,
       isDryRun: true
     });
-    expect(retVal).toContain('dry-run');
-    expect(retVal).toContain(CMD + ' /S /C"'
-      + NET + ' share ' + SHARED_NAME + '=' + sharedDir
-      + ' /GRANT:Everyone,' + GRANT
-      + ' "/REMARK:' + REMARK + '" 1> ');
+    expect(rtn).toContain('dry-run');
+    expect(rtn).toContain(CMD + ' /S /C"'
+      + NET + ' share ' + srrd(sharedName) + '=' + srrd(sharedDir)
+      + ' /GRANT:Everyone,' + grantType
+      + ' /REMARK:' + srrd(remark) + ' 1>');
 
     // Cleans
     fse.removeSync(sharedDir);
@@ -134,38 +131,38 @@ describe('SMB', function () {
 
   testName = 'shareDirectory_READ';
   test(testName, function () {
-    var cmd, retObj;
+    var cmd, rtn;
 
     var ARG_SHARE_PROCESS = '/SHARE_PROCESS' + testName;
     var ARG_DELTE_PROCESS = '/DELTE_PROCESS' + testName;
 
-    var sharedDir = path.join(os.tmpdir(), testName + '_testDir');
-    var SHARED_NAME = 'ShareName_' + testName;
-    var REMARK = 'Share for ' + testName;
+    var sharedDir = path.join(os.tmpdir(), 'Dir for testing ' + testName);
+    var sharedName = 'Temp shared ' + testName;
+    var remark = 'Shared dir for testing ' + testName;
 
     if (includes(process.argv, ARG_SHARE_PROCESS)) {
-      return _shareDir(SHARED_NAME, sharedDir, 'READ', REMARK);
+      return _shareDir(sharedName, sharedDir, 'READ', remark);
     } else if (includes(process.argv, ARG_DELTE_PROCESS)) {
-      return _delShareDir(SHARED_NAME, sharedDir);
+      return _delShareDir(sharedName, sharedDir);
     }
 
     // Shares
     // Runs the admin process and Do the test function in it
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_SHARE_PROCESS;
-    retObj = execSync(cmd, { runsAdmin: true });
-    expect(retObj.error).toBe(false);
+    rtn = execSync(cmd, { runsAdmin: true });
+    expect(rtn.error).toBe(false);
 
     // Checks to access
-    var smbDirPath = '\\\\' + process.env.COMPUTERNAME + '\\' + SHARED_NAME;
+    var smbDirPath = '\\\\' + process.env.COMPUTERNAME + '\\' + sharedName;
     expect(fs.existsSync(smbDirPath)).toBe(true);
 
     var smbNewDir = path.join(smbDirPath, 'NewDir');
     expect(_cb(fs.mkdirSync, smbNewDir)).toThrowError();
 
-    // Clearn
+    // Clean
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_DELTE_PROCESS;
-    retObj = execSync(cmd, { runsAdmin: true });
-    expect(retObj.error).toBe(false);
+    rtn = execSync(cmd, { runsAdmin: true });
+    expect(rtn.error).toBe(false);
   });
 
   testName = 'shareDirectory_CHANGE';
@@ -175,14 +172,14 @@ describe('SMB', function () {
     var ARG_SHARE_PROCESS = '/SHARE_PROCESS' + testName;
     var ARG_DELTE_PROCESS = '/DELTE_PROCESS' + testName;
 
-    var sharedDir = path.join(os.tmpdir(), testName + '_testDir');
-    var SHARED_NAME = 'ShareName_' + testName;
-    var REMARK = 'Share for ' + testName;
+    var sharedDir = path.join(os.tmpdir(), 'Dir for testing ' + testName);
+    var sharedName = 'Temp shared ' + testName;
+    var remark = 'Shared dir for testing ' + testName;
 
     if (includes(process.argv, ARG_SHARE_PROCESS)) {
-      return _shareDir(SHARED_NAME, sharedDir, 'CHANGE', REMARK);
+      return _shareDir(sharedName, sharedDir, 'CHANGE', remark);
     } else if (includes(process.argv, ARG_DELTE_PROCESS)) {
-      return _delShareDir(SHARED_NAME, sharedDir);
+      return _delShareDir(sharedName, sharedDir);
     }
 
     // Shares
@@ -192,7 +189,7 @@ describe('SMB', function () {
     expect(retObj.error).toBe(false);
 
     // Checks to access
-    var smbDirPath = '\\\\' + process.env.COMPUTERNAME + '\\' + SHARED_NAME;
+    var smbDirPath = '\\\\' + process.env.COMPUTERNAME + '\\' + sharedName;
     expect(fs.existsSync(smbDirPath)).toBe(true);
 
     var smbNewDir = path.join(smbDirPath, 'NewDir');
@@ -202,7 +199,7 @@ describe('SMB', function () {
     fs.rmdirSync(smbNewDir);
     expect(fs.existsSync(smbNewDir)).toBe(false);
 
-    // Clearn
+    // Clean
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_DELTE_PROCESS;
     retObj = execSync(cmd, { runsAdmin: true });
     expect(retObj.error).toBe(false);
@@ -237,21 +234,21 @@ describe('SMB', function () {
     var ARG_SHARE_PROCESS = '/SHARE_PROCESS' + testName;
     var ARG_DELTE_PROCESS = '/DELTE_PROCESS' + testName;
 
-    var sharedDir = path.join(os.tmpdir(), testName + '_testDir');
-    var SHARED_NAME = 'ShareName_' + testName;
-    var REMARK = 'Share for ' + testName;
+    var sharedDir = path.join(os.tmpdir(), 'Dir for testing ' + testName);
+    var sharedName = 'Temp shared ' + testName;
+    var remark = 'Shared dir for testing ' + testName;
 
     if (includes(process.argv, ARG_SHARE_PROCESS)) {
-      return _shareDir(SHARED_NAME, sharedDir, 'READ', REMARK);
+      return _shareDir(sharedName, sharedDir, 'READ', remark);
     } else if (includes(process.argv, ARG_DELTE_PROCESS)) {
-      return _delShareDir(SHARED_NAME, sharedDir);
+      return _delShareDir(sharedName, sharedDir);
     }
 
     // Checks the share non-existing
     var shareObjs = net.SMB.getLocalSharesObjs();
 
     var idx = shareObjs.findIndex(function (shareObj) {
-      return shareObj.Name === SHARED_NAME;
+      return shareObj.Name === sharedName;
     });
     expect(idx).toBe(-1);
 
@@ -263,20 +260,19 @@ describe('SMB', function () {
     // Tests
     shareObjs = net.SMB.getLocalSharesObjs();
     expect(isSolidArray(shareObjs)).toBe(true);
-    // console.dir(shareObjs);
 
     idx = shareObjs.findIndex(function (shareObj) {
-      return shareObj.Name === SHARED_NAME;
+      return shareObj.Name === sharedName;
     });
     expect(idx).not.toBe(-1);
 
-    expect(shareObjs[idx].Caption).toBe(REMARK);
-    expect(shareObjs[idx].Description).toBe(REMARK);
-    expect(shareObjs[idx].Name).toBe(SHARED_NAME);
+    expect(shareObjs[idx].Caption).toBe(remark);
+    expect(shareObjs[idx].Description).toBe(remark);
+    expect(shareObjs[idx].Name).toBe(sharedName);
     expect(shareObjs[idx].Path).toBe(sharedDir);
     expect(shareObjs[idx].Status).toBe('OK');
 
-    // Clearn
+    // Clean
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_DELTE_PROCESS;
     retObj = execSync(cmd, { runsAdmin: true });
     expect(retObj.error).toBe(false);
@@ -285,7 +281,7 @@ describe('SMB', function () {
     shareObjs = net.SMB.getLocalSharesObjs();
 
     idx = shareObjs.findIndex(function (shareObj) {
-      return shareObj.Name === SHARED_NAME;
+      return shareObj.Name === sharedName;
     });
     expect(idx).toBe(-1);
   });
@@ -297,18 +293,18 @@ describe('SMB', function () {
     var ARG_SHARE_PROCESS = '/SHARE_PROCESS' + testName;
     var ARG_DELTE_PROCESS = '/DELTE_PROCESS' + testName;
 
-    var sharedDir = path.join(os.tmpdir(), testName + '_testDir');
-    var SHARED_NAME = 'ShareName_' + testName;
-    var REMARK = 'Share for ' + testName;
+    var sharedDir = path.join(os.tmpdir(), 'Dir for testing ' + testName);
+    var sharedName = 'Temp shared ' + testName;
+    var remark = 'Shared dir for testing ' + testName;
 
     if (includes(process.argv, ARG_SHARE_PROCESS)) {
-      return _shareDir(SHARED_NAME, sharedDir, 'READ', REMARK);
+      return _shareDir(sharedName, sharedDir, 'READ', remark);
     } else if (includes(process.argv, ARG_DELTE_PROCESS)) {
-      return _delShareDir(SHARED_NAME, sharedDir);
+      return _delShareDir(sharedName, sharedDir);
     }
 
     // Checks the share non-existing
-    expect(net.SMB.existsShareName(SHARED_NAME)).toBe(false);
+    expect(net.SMB.existsShareName(sharedName)).toBe(false);
 
     // Shares
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_SHARE_PROCESS;
@@ -316,19 +312,19 @@ describe('SMB', function () {
     expect(retObj.error).toBe(false);
 
     // Tests
-    expect(net.SMB.existsShareName(SHARED_NAME)).toBe(true);
+    expect(net.SMB.existsShareName(sharedName)).toBe(true);
     expect(net.SMB.existsShareName('admin$')).toBe(true);
     expect(net.SMB.existsShareName('c$')).toBe(true);
     expect(net.SMB.existsShareName('C$')).toBe(true);
     expect(net.SMB.existsShareName('MaybeNoneShared')).toBe(false);
 
-    // Clearn
+    // Clean
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_DELTE_PROCESS;
     retObj = execSync(cmd, { runsAdmin: true });
     expect(retObj.error).toBe(false);
 
     // Checks the share removed
-    expect(net.SMB.existsShareName(SHARED_NAME)).toBe(false);
+    expect(net.SMB.existsShareName(sharedName)).toBe(false);
   });
 
   testName = 'delSharedDirectory_dryRun';
@@ -338,14 +334,14 @@ describe('SMB', function () {
       expect(_cb(net.SMB.delSharedDirectory, val)).toThrowError();
     });
 
-    var SHARED_NAME = 'ShareName_' + testName;
-    var retVal;
+    var sharedName = 'Temp shared ' + testName;
+    var rtn;
 
     // dry-run
-    retVal = net.SMB.delSharedDirectory(SHARED_NAME, { isDryRun: true });
-    expect(retVal).toContain('dry-run');
-    expect(retVal).toContain(CMD + ' /S /C"'
-      + NET + ' share ' + SHARED_NAME + ' /DELETE /YES 1> ');
+    rtn = net.SMB.delSharedDirectory(sharedName, { isDryRun: true });
+    expect(rtn).toContain('dry-run');
+    expect(rtn).toContain(CMD + ' /S /C"'
+      + NET + ' share ' + srrd(sharedName) + ' /DELETE /YES 1>');
   });
 
   testName = 'delSharedDirectory';
@@ -355,14 +351,14 @@ describe('SMB', function () {
     var ARG_SHARE_PROCESS = '/SHARE_PROCESS' + testName;
     var ARG_DELTE_PROCESS = '/DELTE_PROCESS' + testName;
 
-    var sharedDir = path.join(os.tmpdir(), testName + '_testDir');
-    var SHARED_NAME = 'ShareName_' + testName;
-    var REMARK = 'Share for ' + testName;
+    var sharedDir = path.join(os.tmpdir(), 'Dir for testing ' + testName);
+    var sharedName = 'Temp shared ' + testName;
+    var remark = 'Shared dir for testing ' + testName;
 
     if (includes(process.argv, ARG_SHARE_PROCESS)) {
-      return _shareDir(SHARED_NAME, sharedDir, 'READ', REMARK);
+      return _shareDir(sharedName, sharedDir, 'READ', remark);
     } else if (includes(process.argv, ARG_DELTE_PROCESS)) {
-      return net.SMB.delSharedDirectory(SHARED_NAME);
+      return net.SMB.delSharedDirectory(sharedName);
     }
 
     // Shares
@@ -375,7 +371,7 @@ describe('SMB', function () {
     retObj = execSync(cmd, { runsAdmin: true });
     expect(retObj.error).toBe(false);
 
-    expect(net.SMB.existsShareName(SHARED_NAME)).toBe(false);
+    expect(net.SMB.existsShareName(sharedName)).toBe(false);
 
     // Removes the directory
     fse.removeSync(sharedDir);
@@ -384,11 +380,11 @@ describe('SMB', function () {
 
   // Connection
 
-  testName = '_getNetUseArgsToConnect';
+  testName = '_getNetUseArgsStrToConnect';
   test(testName, function () {
     // Checks throwing error
     noneStrVals.forEach(function (val) {
-      expect(_cb(net.SMB._getNetUseArgsToConnect, val)).toThrowError();
+      expect(_cb(net.SMB._getNetUseArgsStrToConnect, val)).toThrowError();
     });
 
     var comp;
@@ -396,22 +392,28 @@ describe('SMB', function () {
     var domain;
     var user;
     var pwd;
-    var retArgs;
+    var retArgsStr;
 
     comp = '11.22.33.44';
-    share = 'C$';
+    share = 'Temp shared ' + testName;
     domain = '';
     user = 'User1';
-    pwd = 'My p@ss';
-    retArgs = net.SMB._getNetUseArgsToConnect(comp, share, domain, user, pwd);
+    pwd = 'My p@sswo^d >_<';
+    retArgsStr = net.SMB._getNetUseArgsStrToConnect(
+      comp,
+      share,
+      domain,
+      user,
+      pwd
+    );
 
-    expect(retArgs).toEqual([
+    expect(retArgsStr).toBe([
       'use',
-      '\\\\' + comp + '\\' + share,
-      pwd,
+      srrd('\\\\' + comp + '\\' + share),
+      srrd(escapeForCmd(pwd)),
       '/user:' + user,
       '/persistent:no'
-    ]);
+    ].join(' '));
   });
 
   testName = 'connect_dryRun';
@@ -422,65 +424,63 @@ describe('SMB', function () {
     });
 
     var comp = '11.22.33.44';
-    var shareName = 'public';
+    var shareName = 'Temp shared ' + testName;
     var domain = 'PCNAME';
     var user = 'UserId';
-    var pwd = 'My * P@ss><';
-    var retVal;
+    var pwd = 'My * P@ss wo^d >_<';
+    var rtn;
 
     // dry-run
-    retVal = net.SMB.connect(comp, shareName, domain, user, pwd, {
+    rtn = net.SMB.connect(comp, shareName, domain, user, pwd, {
       isDryRun: true
     });
-    expect(retVal).toContain('dry-run [_shRun]: ' + NET + ' use'
-      + ' \\\\' + comp + '\\' + shareName
-      + ' ' + escapeForCmd(pwd) + ' /user:' + domain + '\\' + user
+    expect(rtn).toContain(srrd(NET) + ' use'
+      + ' ' + srrd('\\\\' + comp + '\\' + shareName)
+      + ' ' + srrd(escapeForCmd(pwd)) + ' /user:' + domain + '\\' + user
       + ' /persistent:no'
     );
   });
 
   testName = 'connect';
   test(testName, function () {
-    var cmd, retObj;
+    var cmd, rtn;
 
     var ARG_SHARE_PROCESS = '/SHARE_PROCESS' + testName;
     var ARG_DELTE_PROCESS = '/DELTE_PROCESS' + testName;
 
-    var sharedDir = path.join(os.tmpdir(), testName + '_testDir');
-    var SHARED_NAME = 'ShareName_' + testName;
-    var REMARK = 'Share for ' + testName;
+    var sharedDir = path.join(os.tmpdir(), 'Dir for testing ' + testName);
+    var sharedName = 'Temp shared ' + testName;
+    var remark = 'Shared dir for testing ' + testName;
 
     if (includes(process.argv, ARG_SHARE_PROCESS)) {
-      return _shareDir(SHARED_NAME, sharedDir, 'READ', REMARK);
+      return _shareDir(sharedName, sharedDir, 'READ', remark);
     } else if (includes(process.argv, ARG_DELTE_PROCESS)) {
-      return _delShareDir(SHARED_NAME, sharedDir);
+      return _delShareDir(sharedName, sharedDir);
     }
 
     // Shares
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_SHARE_PROCESS;
-    retObj = execSync(cmd, { runsAdmin: true });
-    expect(retObj.error).toBe(false);
+    rtn = execSync(cmd, { runsAdmin: true });
+    expect(rtn.error).toBe(false);
 
     // Connects
-    retObj = net.SMB.connect(process.env.COMPUTERNAME, SHARED_NAME);
-    // console.dir(retObj);
+    rtn = net.SMB.connect(process.env.COMPUTERNAME, sharedName);
 
     // Checks
-    var smbPath = '\\\\' + process.env.COMPUTERNAME + '\\' + SHARED_NAME;
+    var smbPath = '\\\\' + process.env.COMPUTERNAME + '\\' + sharedName;
     while (!fs.existsSync(smbPath)) WScript.Sleep(300); // Waiting the finished
     expect(fs.existsSync(smbPath)).toBe(true);
 
-    retObj = execFileSync(NET, ['use']);
-    // console.dir(retObj);
-    expect(retObj.stdout.indexOf(smbPath)).not.toBe(-1); // @TODO
+    rtn = execFileSync(NET, ['use']);
+    expect(rtn.stdout.indexOf(smbPath)).not.toBe(-1); // @TODO
 
     // Cleans
     // Disconnect
     _disconnect(testName, sharedDir, smbPath);
     // Delete share
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_DELTE_PROCESS;
-    retObj = execSync(cmd, { runsAdmin: true });
-    expect(retObj.error).toBe(false);
+    rtn = execSync(cmd, { runsAdmin: true });
+    expect(rtn.error).toBe(false);
   });
 
   testName = 'connectSync_dryRun';
@@ -491,64 +491,62 @@ describe('SMB', function () {
     });
 
     var comp = '11.22.33.44';
-    var shareName = 'public';
+    var sharedName = 'Temp shared ' + testName;
+    var sharedPath = srrd('\\\\' + comp + '\\' + sharedName);
     var domain = 'PCNAME';
     var user = 'UserId';
-    var pwd = 'My * P@ss><';
-    var retVal;
+    var pwd = 'My * P@ss wo^d >_<';
+    var rtn;
 
     // dry-run
-    retVal = net.SMB.connectSync(comp, shareName, domain, user, pwd, {
+    rtn = net.SMB.connectSync(comp, sharedName, domain, user, pwd, {
       isDryRun: true
     });
-    // console.dir(retVal);
-    expect(retVal).toContain('dry-run [_shRun]: ' + CMD + ' /S /C"'
-      + NET + ' use'
-      + ' \\\\' + comp + '\\' + shareName
-      + ' ' + escapeForCmd(pwd) + ' /user:' + domain + '\\' + user
-      + ' /persistent:no 1> '
+    expect(rtn).toContain('dry-run [_shRun]: ' + CMD + ' /S /C"'
+      + srrd(NET) + ' use ' + srrd(sharedPath)
+      + ' ' + srrd(escapeForCmd(pwd)) + ' /user:' + domain + '\\' + user
+      + ' /persistent:no 1>'
     );
   });
 
   testName = 'connectSync';
   test(testName, function () {
-    var cmd, retObj;
+    var cmd, rtn;
 
     var ARG_SHARE_PROCESS = '/SHARE_PROCESS' + testName;
     var ARG_DELTE_PROCESS = '/DELTE_PROCESS' + testName;
 
-    var sharedDir = path.join(os.tmpdir(), testName + '_testDir');
-    var SHARED_NAME = 'ShareName_' + testName;
-    var REMARK = 'Share for ' + testName;
+    var sharedDir = path.join(os.tmpdir(), 'Dir for testing ' + testName);
+    var sharedName = 'Temp shared ' + testName;
+    var remark = 'Shared dir for testing ' + testName;
 
     if (includes(process.argv, ARG_SHARE_PROCESS)) {
-      return _shareDir(SHARED_NAME, sharedDir, 'READ', REMARK);
+      return _shareDir(sharedName, sharedDir, 'READ', remark);
     } else if (includes(process.argv, ARG_DELTE_PROCESS)) {
-      return _delShareDir(SHARED_NAME, sharedDir);
+      return _delShareDir(sharedName, sharedDir);
     }
 
-    // Shares
+    // Sharing
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_SHARE_PROCESS;
-    retObj = execSync(cmd, { runsAdmin: true });
-    expect(retObj.error).toBe(false);
+    rtn = execSync(cmd, { runsAdmin: true });
+    expect(rtn.error).toBe(false);
 
-    // Connects
-    retObj = net.SMB.connectSync(process.env.COMPUTERNAME, SHARED_NAME);
-    // console.dir(retObj);
+    // Connecting
+    rtn = net.SMB.connectSync(process.env.COMPUTERNAME, sharedName);
 
-    // Checks
-    var smbPath = '\\\\' + process.env.COMPUTERNAME + '\\' + SHARED_NAME;
+    // Checking
+    var smbPath = '\\\\' + process.env.COMPUTERNAME + '\\' + sharedName;
 
-    retObj = execFileSync(NET, ['use']);
-    expect(retObj.stdout.indexOf(smbPath)).not.toBe(-1); // @TODO
+    rtn = execFileSync(NET, ['use']);
+    expect(rtn.stdout.indexOf(smbPath)).not.toBe(-1); // @TODO
 
-    // Cleans
-    // Disconnect
+    // Cleaning
+    // Disconnecting
     _disconnect(testName, sharedDir, smbPath);
-    // Delete share
+    // Deleting shared
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_DELTE_PROCESS;
-    retObj = execSync(cmd, { runsAdmin: true });
-    expect(retObj.error).toBe(false);
+    rtn = execSync(cmd, { runsAdmin: true });
+    expect(rtn.error).toBe(false);
   });
 
   testName = 'showCurrentSession';
@@ -562,38 +560,37 @@ describe('SMB', function () {
 
   testName = 'getActiveConnectionsSwbemObjs';
   test(testName, function () {
-    var cmd, retObj;
+    var cmd, rtn;
 
     var ARG_SHARE_PROCESS = '/SHARE_PROCESS' + testName;
     var ARG_DELTE_PROCESS = '/DELTE_PROCESS' + testName;
 
-    var sharedDir = path.join(os.tmpdir(), testName + '_testDir');
-    var SHARED_NAME = 'ShareName_' + testName;
-    var REMARK = 'Share for ' + testName;
+    var sharedDir = path.join(os.tmpdir(), 'Dir for testing ' + testName);
+    var sharedName = 'Temp shared ' + testName;
+    var remark = 'Shared dir for testing ' + testName;
 
     if (includes(process.argv, ARG_SHARE_PROCESS)) {
-      return _shareDir(SHARED_NAME, sharedDir, 'READ', REMARK);
+      return _shareDir(sharedName, sharedDir, 'READ', remark);
     } else if (includes(process.argv, ARG_DELTE_PROCESS)) {
-      return _delShareDir(SHARED_NAME, sharedDir);
+      return _delShareDir(sharedName, sharedDir);
     }
 
-    // Shares
+    // Sharing
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_SHARE_PROCESS;
-    retObj = execSync(cmd, { runsAdmin: true });
-    expect(retObj.error).toBe(false);
-    // Connects
-    var smbPath = _connect(testName, sharedDir, SHARED_NAME);
+    rtn = execSync(cmd, { runsAdmin: true });
+    expect(rtn.error).toBe(false);
+    // Connecting
+    var smbPath = _connect(testName, sharedDir, sharedName);
 
-    // Tests
+    // Testing
+    // @NOTE Require execution as the Admin
     var sWbemObjSets = net.SMB.getActiveConnectionsSwbemObjs();
     expect(isSolidArray(sWbemObjSets)).toBe(true);
-    // console.dir(sWbemObjSets);
 
     var idx = sWbemObjSets.findIndex(function (connection) {
       return connection.Name === smbPath;
     });
     expect(idx).not.toBe(-1);
-
     expect(sWbemObjSets[idx].Caption).toBe('RESOURCE CONNECTED');
     expect(isSolidString(sWbemObjSets[idx].Description)).toBe(true);
     expect(sWbemObjSets[idx].Name).toBe(smbPath);
@@ -603,10 +600,10 @@ describe('SMB', function () {
     expect(sWbemObjSets[idx].Status).toBe('OK');
     // @TODO test the methods
 
-    // Test specifying argument
-    sWbemObjSets = net.SMB.getActiveConnectionsSwbemObjs(SHARED_NAME + '$');
+    // Testing specifying an argument
+    // @NOTE Require execution as the Admin
+    sWbemObjSets = net.SMB.getActiveConnectionsSwbemObjs(sharedName + '$');
     expect(isSolidArray(sWbemObjSets)).toBe(true);
-    // console.dir(sWbemObjSets);
 
     expect(sWbemObjSets[0].Caption).toBe('RESOURCE CONNECTED');
     expect(isSolidString(sWbemObjSets[0].Description)).toBe(true);
@@ -614,43 +611,42 @@ describe('SMB', function () {
     expect(sWbemObjSets[0].RemoteName).toBe(smbPath);
     expect(sWbemObjSets[0].RemotePath).toBe(smbPath);
 
-    // Cleans
-    // Disconnect
+    // Cleaning
+    // Disconnecting
     _disconnect(testName, sharedDir, smbPath);
-    // Delete share
+    // Deleting shared
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_DELTE_PROCESS;
-    retObj = execSync(cmd, { runsAdmin: true });
-    expect(retObj.error).toBe(false);
+    rtn = execSync(cmd, { runsAdmin: true });
+    expect(rtn.error).toBe(false);
   });
 
   testName = 'getActiveConnectionsObjs';
   test(testName, function () {
-    var cmd, retObj;
+    var cmd, rtn;
 
     var ARG_SHARE_PROCESS = '/SHARE_PROCESS' + testName;
     var ARG_DELTE_PROCESS = '/DELTE_PROCESS' + testName;
 
-    var sharedDir = path.join(os.tmpdir(), testName + '_testDir');
-    var SHARED_NAME = 'ShareName_' + testName;
-    var REMARK = 'Share for ' + testName;
+    var sharedDir = path.join(os.tmpdir(), 'Dir for testing ' + testName);
+    var sharedName = 'Temp shared ' + testName;
+    var remark = 'Shared dir for testing ' + testName;
 
     if (includes(process.argv, ARG_SHARE_PROCESS)) {
-      return _shareDir(SHARED_NAME, sharedDir, 'READ', REMARK);
+      return _shareDir(sharedName, sharedDir, 'READ', remark);
     } else if (includes(process.argv, ARG_DELTE_PROCESS)) {
-      return _delShareDir(SHARED_NAME, sharedDir);
+      return _delShareDir(sharedName, sharedDir);
     }
 
-    // Shares
+    // Sharing
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_SHARE_PROCESS;
-    retObj = execSync(cmd, { runsAdmin: true });
-    expect(retObj.error).toBe(false);
-    // Connects
-    var smbPath = _connect(testName, sharedDir, SHARED_NAME);
+    rtn = execSync(cmd, { runsAdmin: true });
+    expect(rtn.error).toBe(false);
+    // Connecting
+    var smbPath = _connect(testName, sharedDir, sharedName);
 
-    // Tests
+    // Testing
     var connections = net.SMB.getActiveConnectionsObjs();
     expect(isSolidArray(connections)).toBe(true);
-    // console.dir(connections);
 
     var idx = connections.findIndex(function (connection) {
       return connection.Name === smbPath;
@@ -665,10 +661,9 @@ describe('SMB', function () {
     expect(connections[idx].Persistent).toBeDefined();
     expect(connections[idx].Status).toBe('OK');
 
-    // Test specifying argument
-    connections = net.SMB.getActiveConnectionsObjs(SHARED_NAME + '$');
+    // Testing specifying an argument
+    connections = net.SMB.getActiveConnectionsObjs(sharedName + '$');
     expect(isSolidArray(connections)).toBe(true);
-    // console.dir(connections);
 
     expect(connections[0].Caption).toBe('RESOURCE CONNECTED');
     expect(isSolidString(connections[0].Description)).toBe(true);
@@ -676,30 +671,30 @@ describe('SMB', function () {
     expect(connections[0].RemoteName).toBe(smbPath);
     expect(connections[0].RemotePath).toBe(smbPath);
 
-    // Cleans
-    // Disconnect
+    // Cleaning
+    // Disconnecting
     _disconnect(testName, sharedDir, smbPath);
-    // Delete share
+    // Deleting share
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_DELTE_PROCESS;
-    retObj = execSync(cmd, { runsAdmin: true });
-    expect(retObj.error).toBe(false);
+    rtn = execSync(cmd, { runsAdmin: true });
+    expect(rtn.error).toBe(false);
   });
 
   testName = 'hasConnection';
   test(testName, function () {
-    var cmd, retObj;
+    var cmd, rtn;
 
     var ARG_SHARE_PROCESS = '/SHARE_PROCESS' + testName;
     var ARG_DELTE_PROCESS = '/DELTE_PROCESS' + testName;
 
-    var sharedDir = path.join(os.tmpdir(), testName + '_testDir');
-    var SHARED_NAME = 'ShareName_' + testName;
-    var REMARK = 'Share for ' + testName;
+    var sharedDir = path.join(os.tmpdir(), 'Dir for testing ' + testName);
+    var sharedName = 'Temp shared ' + testName;
+    var remark = 'Shared dir for testing ' + testName;
 
     if (includes(process.argv, ARG_SHARE_PROCESS)) {
-      return _shareDir(SHARED_NAME, sharedDir, 'READ', REMARK);
+      return _shareDir(sharedName, sharedDir, 'READ', remark);
     } else if (includes(process.argv, ARG_DELTE_PROCESS)) {
-      return _delShareDir(SHARED_NAME, sharedDir);
+      return _delShareDir(sharedName, sharedDir);
     }
 
     // Checks throwing error
@@ -707,141 +702,145 @@ describe('SMB', function () {
       expect(_cb(net.SMB.hasConnection, val)).toThrowError();
     });
     // Checks the connection non-existing
-    expect(net.SMB.hasConnection(SHARED_NAME)).toBe(false);
+    expect(net.SMB.hasConnection(sharedName)).toBe(false);
 
-    // Shares
+    // Sharing
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_SHARE_PROCESS;
-    retObj = execSync(cmd, { runsAdmin: true });
-    expect(retObj.error).toBe(false);
-    // Connects
-    var smbPath = _connect(testName, sharedDir, SHARED_NAME);
+    rtn = execSync(cmd, { runsAdmin: true });
+    expect(rtn.error).toBe(false);
+    // Connecting
+    var smbPath = _connect(testName, sharedDir, sharedName);
 
-    // Tests
+    // Testing
+    // @NOTE Require execution as the Admin
     expect(net.SMB.hasConnection(smbPath)).toBe(true);
 
-    // Cleans
-    // Disconnect
+    // Cleaning
+    // Disconnecting
     _disconnect(testName, sharedDir, smbPath);
-    // Delete share
+    // Deleting share
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_DELTE_PROCESS;
-    retObj = execSync(cmd, { runsAdmin: true });
-    expect(retObj.error).toBe(false);
+    rtn = execSync(cmd, { runsAdmin: true });
+    expect(rtn.error).toBe(false);
 
-    // Checks the connection removed
-    expect(net.SMB.hasConnection(SHARED_NAME)).toBe(false);
+    // Checking the connection removed
+    expect(net.SMB.hasConnection(sharedName)).toBe(false);
   });
 
-  testName = '_getNetUseArgsToDisconnect';
+  testName = '_getNetUseArgsStrToDisconnect';
   test(testName, function () {
     var args;
 
-    args = net.SMB._getNetUseArgsToDisconnect();
-    expect(args).toEqual(['use', '*', '/delete', '/yes']);
+    args = net.SMB._getNetUseArgsStrToDisconnect();
+    expect(args).toEqual('use * /delete /yes');
 
-    args = net.SMB._getNetUseArgsToDisconnect('comp');
-    expect(args).toEqual(['use', '\\\\comp', '/delete', '/yes']);
+    args = net.SMB._getNetUseArgsStrToDisconnect('comp');
+    expect(args).toEqual('use \\\\comp /delete /yes');
 
-    args = net.SMB._getNetUseArgsToDisconnect('comp', 'shareName');
-    expect(args).toEqual(['use', '\\\\comp\\shareName', '/delete', '/yes']);
+    args = net.SMB._getNetUseArgsStrToDisconnect('comp', 'shareName');
+    expect(args).toEqual('use \\\\comp\\shareName /delete /yes');
   });
 
   testName = 'disconnect_dryRun';
   test(testName, function () {
     var comp = '11.22.33.44';
-    var shareName = 'public';
-    var retVal;
+    var shareName = 'Temp shared ' + testName;
+    var rtn;
 
     // dry-run
-    retVal = net.SMB.disconnect(comp, shareName, { isDryRun: true });
-    expect(retVal).toContain('dry-run [_shRun]: ' + NET + ' use'
-      + ' \\\\' + comp + '\\' + shareName + ' /delete /yes'
+    rtn = net.SMB.disconnect(comp, shareName, { isDryRun: true });
+    expect(rtn).toContain(srrd(NET) + ' use'
+      + ' ' + srrd('\\\\' + comp + '\\' + shareName) + ' /delete /yes'
     );
   });
 
   testName = 'disconnect';
   test(testName, function () {
-    var cmd, retObj;
+    var cmd, rtn;
 
     var ARG_SHARE_PROCESS = '/SHARE_PROCESS' + testName;
     var ARG_DELTE_PROCESS = '/DELTE_PROCESS' + testName;
 
-    var sharedDir = path.join(os.tmpdir(), testName + '_testDir');
-    var SHARED_NAME = 'ShareName_' + testName;
-    var REMARK = 'Share for ' + testName;
+    var sharedDir = path.join(os.tmpdir(), 'Dir for testing ' + testName);
+    var sharedName = 'Temp shared ' + testName;
+    var remark = 'Shared dir for testing ' + testName;
 
     if (includes(process.argv, ARG_SHARE_PROCESS)) {
-      return _shareDir(SHARED_NAME, sharedDir, 'READ', REMARK);
+      return _shareDir(sharedName, sharedDir, 'READ', remark);
     } else if (includes(process.argv, ARG_DELTE_PROCESS)) {
-      return _delShareDir(SHARED_NAME);
+      return _delShareDir(sharedName);
     }
 
-    // Shares
+    // Sharing
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_SHARE_PROCESS;
-    retObj = execSync(cmd, { runsAdmin: true });
-    expect(retObj.error).toBe(false);
-    // Connects
-    var smbPath = _connect(testName, sharedDir, SHARED_NAME);
+    rtn = execSync(cmd, { runsAdmin: true });
+    expect(rtn.error).toBe(false);
+    // Connecting
+    var smbPath = _connect(testName, sharedDir, sharedName);
+    // @NOTE Require execution as the Admin
     expect(net.SMB.hasConnection(smbPath)).toBe(true);
 
-    // Tests
-    net.SMB.disconnect(process.env.COMPUTERNAME, SHARED_NAME);
+    // Testing
+    net.SMB.disconnect(process.env.COMPUTERNAME, sharedName);
 
     while (!net.SMB.hasConnection(smbPath)) WScript.Sleep(300); // Waiting
 
-    // Cleans
-    // Deletes the share directory
+    // Cleaning
+    // Deleting the share directory
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_DELTE_PROCESS;
-    retObj = execSync(cmd, { runsAdmin: true });
-    expect(retObj.error).toBe(false);
+    rtn = execSync(cmd, { runsAdmin: true });
+    expect(rtn.error).toBe(false);
   });
 
   testName = 'disconnectSync_dryRun';
   test(testName, function () {
     var comp = '11.22.33.44';
-    var shareName = 'public';
-    var retVal;
+    var sharedName = 'Temp shared ' + testName;
+    var sharedPath = srrd('\\\\' + comp + '\\' + sharedName);
+    var rtn;
 
     // dry-run
-    retVal = net.SMB.disconnectSync(comp, shareName, { isDryRun: true });
-    expect(retVal).toContain('dry-run [_shRun]: ' + CMD + ' /S /C"'
-      + NET + ' use' + ' \\\\' + comp + '\\' + shareName + ' /delete /yes 1> '
+    rtn = net.SMB.disconnectSync(comp, sharedName, { isDryRun: true });
+    expect(rtn).toContain('dry-run [_shRun]: ' + CMD + ' /S /C"'
+      + srrd(NET) + ' use ' + srrd(sharedPath) + ' /delete /yes 1>'
     );
   });
 
   testName = 'disconnectSync';
   test(testName, function () {
-    var cmd, retObj;
+    var cmd, rtn;
 
     var ARG_SHARE_PROCESS = '/SHARE_PROCESS' + testName;
     var ARG_DELTE_PROCESS = '/DELTE_PROCESS' + testName;
 
-    var sharedDir = path.join(os.tmpdir(), testName + '_testDir');
-    var SHARED_NAME = 'ShareName_' + testName;
-    var REMARK = 'Share for ' + testName;
+    var sharedDir = path.join(os.tmpdir(), 'Dir for testing ' + testName);
+    var sharedName = 'Temp shared ' + testName;
+    var remark = 'Shared dir for testing ' + testName;
 
     if (includes(process.argv, ARG_SHARE_PROCESS)) {
-      return _shareDir(SHARED_NAME, sharedDir, 'READ', REMARK);
+      return _shareDir(sharedName, sharedDir, 'READ', remark);
     } else if (includes(process.argv, ARG_DELTE_PROCESS)) {
-      return _delShareDir(SHARED_NAME);
+      return _delShareDir(sharedName);
     }
 
-    // Shares
+    // Sharing
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_SHARE_PROCESS;
-    retObj = execSync(cmd, { runsAdmin: true });
-    expect(retObj.error).toBe(false);
-    // Connects
-    var smbPath = _connect(testName, sharedDir, SHARED_NAME);
+    rtn = execSync(cmd, { runsAdmin: true });
+    expect(rtn.error).toBe(false);
+    // Connecting
+    var smbPath = _connect(testName, sharedDir, sharedName);
+    // @NOTE Require execution as the Admin
     expect(net.SMB.hasConnection(smbPath)).toBe(true);
 
-    // Tests
-    net.SMB.disconnectSync(process.env.COMPUTERNAME, SHARED_NAME);
+    // Testing
+    net.SMB.disconnectSync(process.env.COMPUTERNAME, sharedName);
     expect(net.SMB.hasConnection(smbPath)).toBe(false);
 
-    // Cleans
-    // Deletes the share directory
+    // Cleaning
+    // Deleting the share directory
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_DELTE_PROCESS;
-    retObj = execSync(cmd, { runsAdmin: true });
-    expect(retObj.error).toBe(false);
+    rtn = execSync(cmd, { runsAdmin: true });
+    expect(rtn.error).toBe(false);
   });
 
   testName = 'connectSyncSurely_dryRun';
@@ -852,66 +851,67 @@ describe('SMB', function () {
     });
 
     var comp = '11.22.33.44';
-    var shareName = 'public';
+    var shareName = 'Temp shared ' + testName;
+    var sharedPath = srrd('\\\\' + comp + '\\' + shareName);
     var domain = 'PCNAME';
     var user = 'UserId';
-    var pwd = 'usrP@ss';
-    var retVal;
+    var pwd = 'My * P@ss wo^d >_<';
+    var rtn;
 
     // dry-run
-    retVal = net.SMB.connectSyncSurely(comp, shareName, domain, user, pwd, {
+    rtn = net.SMB.connectSyncSurely(comp, shareName, domain, user, pwd, {
       isDryRun: true
     });
-    expect(retVal).toContain('dry-run [_shRun]: ' + CMD + ' /S /C"'
-      + NET + ' use' + ' \\\\' + comp + '\\' + shareName + ' /delete /yes 1> '
+    expect(rtn).toContain('dry-run [_shRun]: ' + CMD + ' /S /C"'
+      + srrd(NET) + ' use ' + srrd(sharedPath) + ' /delete /yes 1>'
     );
-    expect(retVal).toContain('dry-run [_shRun]: ' + CMD + ' /S /C"'
-      + NET + ' use'
-      + ' \\\\' + comp + '\\' + shareName
-      + ' ' + pwd + ' /user:' + domain + '\\' + user
-      + ' /persistent:no 1> '
+    expect(rtn).toContain('dry-run [_shRun]: ' + CMD + ' /S /C"'
+      + srrd(NET) + ' use ' + srrd(sharedPath)
+      + ' ' + srrd(escapeForCmd(pwd)) + ' /user:' + domain + '\\' + user
+      + ' /persistent:no 1>'
     );
   });
 
   testName = 'connectSyncSurely';
   test(testName, function () {
-    var cmd, retObj;
+    var cmd, rtn;
 
     var ARG_SHARE_PROCESS = '/SHARE_PROCESS' + testName;
     var ARG_DELTE_PROCESS = '/DELTE_PROCESS' + testName;
 
-    var sharedDir = path.join(os.tmpdir(), testName + '_testDir');
-    var SHARED_NAME = 'ShareName_' + testName;
-    var REMARK = 'Share for ' + testName;
+    var sharedDir = path.join(os.tmpdir(), 'Dir for testing ' + testName);
+    var sharedName = 'Temp shared ' + testName;
+    var remark = 'Shared dir for testing ' + testName;
 
     if (includes(process.argv, ARG_SHARE_PROCESS)) {
-      return _shareDir(SHARED_NAME, sharedDir, 'READ', REMARK);
+      return _shareDir(sharedName, sharedDir, 'READ', remark);
     } else if (includes(process.argv, ARG_DELTE_PROCESS)) {
-      return _delShareDir(SHARED_NAME, sharedDir);
+      return _delShareDir(sharedName, sharedDir);
     }
 
-    // Shares
+    // Sharing
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_SHARE_PROCESS;
-    retObj = execSync(cmd, { runsAdmin: true });
-    expect(retObj.error).toBe(false);
+    rtn = execSync(cmd, { runsAdmin: true });
+    expect(rtn.error).toBe(false);
 
-    // Connects
-    net.SMB.connectSyncSurely(process.env.COMPUTERNAME, SHARED_NAME);
+    // Connecting
+    net.SMB.connectSyncSurely(process.env.COMPUTERNAME, sharedName);
 
-    // Checks
-    var smbPath = '\\\\' + process.env.COMPUTERNAME + '\\' + SHARED_NAME;
+    // Checking
+    var smbPath = '\\\\' + process.env.COMPUTERNAME + '\\' + sharedName;
+    // @NOTE Require execution as the Admin
     expect(net.SMB.hasConnection(smbPath)).toBe(true);
 
-    // Re-connects
-    net.SMB.connectSyncSurely(process.env.COMPUTERNAME, SHARED_NAME);
+    // Re-connecting
+    net.SMB.connectSyncSurely(process.env.COMPUTERNAME, sharedName);
     expect(net.SMB.hasConnection(smbPath)).toBe(true);
 
-    // Cleans
-    // Disconnect
+    // Cleaning
+    // Disconnecting
     _disconnect(testName, sharedDir, smbPath);
-    // Delete share
+    // Deleting share
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_DELTE_PROCESS;
-    retObj = execSync(cmd, { runsAdmin: true });
-    expect(retObj.error).toBe(false);
+    rtn = execSync(cmd, { runsAdmin: true });
+    expect(rtn.error).toBe(false);
   });
 });

@@ -26,10 +26,10 @@
   var hasIn = util.hasIn;
   var isSolidArray = util.isSolidArray;
   var isSolidString = util.isSolidString;
+  var srrd = os.surroundCmdArg;
   var NETSH_EXE = os.exefiles.netsh;
-  var execFile = child_process.execFile;
+  var exec = child_process.exec;
   var execSync = child_process.execSync;
-  var execFileSync = child_process.execFileSync;
 
   var net = Wsh.Net;
 
@@ -65,7 +65,7 @@
     var FN = 'net.respondsHost';
     if (!isSolidString(host)) throwErrNonStr(FN, host);
 
-    var retObj = execSync('"' + os.exefiles.ping + '" ' + host);
+    var retObj = execSync(os.exefiles.ping + ' ' + host);
 
     /**
      * Windows7_JP  127.0.0.1 からの応答: バイト数 =32 時間 =12ms TTL=123
@@ -87,10 +87,15 @@
    * net.showIpConfigAll(); // Displays a DOS window
    * @function showIpConfigAll
    * @memberof Wsh.Net
+   * @param {object} [options] - Optional parameters.
+   * @param {(number|string)} [options.winStyle='activeDef'] - See {@link https://docs.tuckn.net/WshUtil/Wsh.Constants.windowStyles.html|Wsh.Constants.windowStyles}.
    * @returns {void}
    */
-  net.showIpConfigAll = function () {
-    execFile('ipconfig', ['/all'], { shell: true, closes: false });
+  net.showIpConfigAll = function (options) {
+    var winStyle = obtain(options, 'winStyle', 'activeDef');
+    var command = 'ipconfig /all';
+
+    exec(command, { closes: false, winStyle: winStyle });
   }; // }}}
 
   // net.getAdaptersPropsSWbemObjs {{{
@@ -470,6 +475,7 @@
    * @param {string} destPath - Recommend the extension .wfw
    * @param {object} [options] - Optional parameters.
    * @param {boolean} [options.isDryRun=false] - No execute, returns the string of command.
+   * @param {(boolean|undefined)} [options.runsAdmin=true] - true: as Admin, false: as User
    * @returns {object|string} - See {@link https://docs.tuckn.net/WshChildProcess/global.html#typeRunSyncReturn|typeRunSyncReturn}. If options.isDryRun is true, returns string.
    */
   net.exportWinFirewallSettings = function (destPath, options) {
@@ -477,11 +483,12 @@
     if (!isSolidString(destPath)) throwErrNonStr(FN, destPath);
 
     var pathToExport = path.resolve(destPath);
-    var args = ['advfirewall', 'export', pathToExport];
+    var command = srrd(NETSH_EXE) + ' advfirewall export ' + srrd(pathToExport);
+    var runsAdmin = obtain(options, 'runsAdmin', true);
     var isDryRun = obtain(options, 'isDryRun', false);
 
-    return execFileSync(NETSH_EXE, args, {
-      runsAdmin: true,
+    return execSync(command, {
+      runsAdmin: runsAdmin,
       winStyle: 'hidden',
       isDryRun: isDryRun
     });
@@ -505,6 +512,7 @@
    * @param {string} [mask='255.255.255.0']
    * @param {string} [defGw='']
    * @param {object} [options] - Optional parameters.
+   * @param {(boolean|undefined)} [options.runsAdmin] - true: as Admin, false: as User
    * @param {boolean} [options.isDryRun=false] - No execute, returns the string of command.
    * @returns {object|string} - See {@link https://docs.tuckn.net/WshChildProcess/global.html#typeRunSyncReturn|typeRunSyncReturn}. If options.isDryRun is true, returns string.
    */
@@ -512,23 +520,25 @@
     var FN = 'net.setIpAddress';
     if (!isSolidString(netName)) throwErrNonStr(FN, netName);
 
-    var args = ['interface ipv4', 'set address', 'name="' + netName + '"'];
+    var argsStr = 'interface ipv4 set address name="' + netName + '"';
     if (isSolidString(ip)) {
-      args.push('source=static address=' + ip);
+      argsStr += ' source=static address=' + ip;
 
       if (isSolidString(mask)) {
-        args.push('mask=' + mask);
+        argsStr += ' mask=' + mask;
       } else {
-        args.push('mask=255.255.255.0');
+        argsStr += ' mask=255.255.255.0';
       }
 
       if (isSolidString(defGw)) {
-        args.push('gateway=' + defGw, 'gwmetric=1');
+        argsStr += ' gateway=' + defGw + ' gwmetric=1';
       }
     } else {
-      args.push('source=dhcp');
+      argsStr += ' source=dhcp';
     }
 
+    var command = srrd(NETSH_EXE) + ' ' + argsStr;
+    var runsAdmin = obtain(options, 'runsAdmin', null);
     var isDryRun = obtain(options, 'isDryRun', false);
 
     /**
@@ -546,7 +556,8 @@
           netsh interface ipv4 set address name="LAN Cable" source=dhcp
           DHCP はこのインターフェイスで既に有効です。
      */
-    return execFileSync(NETSH_EXE, args, {
+    return execSync(command, {
+      runsAdmin: runsAdmin,
       winStyle: 'hidden',
       isDryRun: isDryRun
     });
@@ -555,6 +566,7 @@
   // net.setIpAddressesWithWMI {{{
   /**
    * Set the IP address and the SubNetMask.
+   *
    * @function setIpAddressesWithWMI
    * @memberof Wsh.Net
    * @param {string} netName - The Network Adapter Index. 誤爆が怖いので操作するNetworkアダプタをIndexで指定する
@@ -651,6 +663,7 @@
    * @param {string} [dns1] - If empty, enables DHCP.
    * @param {string} [dns2='']
    * @param {object} [options] - Optional parameters.
+   * @param {(boolean|undefined)} [options.runsAdmin] - true: as Admin, false: as User
    * @param {boolean} [options.isDryRun=false] - No execute, returns the string of command.
    * @returns {void|string} - If options.isDryRun is true, returns string.
    */
@@ -658,16 +671,19 @@
     var FN = 'net.setDnsServers';
     if (!isSolidString(netName)) throwErrNonStr(FN, netName);
 
-    var args1 = ['interface ipv4', 'set dnsservers', 'name="' + netName + '"'];
+    var argsStr1 = 'interface ipv4 set dnsservers name="' + netName + '"';
     if (isSolidString(dns1)) {
-      args1.push('source=static', 'address=' + dns1, 'register=non', 'validate=no');
+      argsStr1 += ' source=static address=' + dns1 + ' register=non validate=no';
     } else {
-      args1.push('source=dhcp');
+      argsStr1 += ' source=dhcp';
     }
 
+    var command1 = srrd(NETSH_EXE) + ' ' + argsStr1;
+    var runsAdmin = obtain(options, 'runsAdmin', null);
     var isDryRun = obtain(options, 'isDryRun', false);
 
-    var rtnVal1 = execFileSync(NETSH_EXE, args1, {
+    var rtnVal1 = execSync(command1, {
+      runsAdmin: runsAdmin,
       winStyle: 'hidden',
       isDryRun: isDryRun
     });
@@ -675,7 +691,7 @@
     if (!isDryRun && rtnVal1.error) {
       throw new Error('Error: [StdErrNotEmpty]\n'
         + '  at ' + FN + ' (' + MODULE_TITLE + ')\n'
-        + '  exefile: "' + NETSH_EXE + '"\n  args: ' + insp(args1) + '\n'
+        + '  exefile: "' + NETSH_EXE + '"\n  args: ' + insp(argsStr1) + '\n'
         + '  rtnVal: ' + insp(rtnVal1));
     }
 
@@ -684,9 +700,11 @@
       return;
     }
 
-    var args2 = ['interface ipv4', 'add dnsservers', 'name="' + netName + '"', 'address=' + dns2, 'index=2', 'validate=no'];
+    var argsStr2 = 'interface ipv4 add dnsservers name="' + netName + '" address=' + dns2 + ' index=2 validate=no';
 
-    var rtnVal2 = execFileSync(NETSH_EXE, args2, {
+    var command2 = srrd(NETSH_EXE) + ' ' + argsStr2;
+    var rtnVal2 = execSync(command2, {
+      runsAdmin: runsAdmin,
       winStyle: 'hidden',
       isDryRun: isDryRun
     });
@@ -696,7 +714,7 @@
     if (rtnVal2.error) {
       throw new Error('Error: [StdErrNotEmpty]\n'
         + '  at ' + FN + ' (' + MODULE_TITLE + ')\n'
-        + '  exefile: "' + NETSH_EXE + '"\n  args: ' + insp(args2) + '\n'
+        + '  exefile: "' + NETSH_EXE + '"\n  args: ' + insp(argsStr2) + '\n'
         + '  rtnVal: ' + insp(rtnVal2));
     }
   }; // }}}
@@ -757,6 +775,7 @@
    * @memberof Wsh.Net
    * @param {string} srcPath
    * @param {object} [options] - Optional parameters.
+   * @param {(boolean|undefined)} [options.runsAdmin=true] - true: as Admin, false: as User
    * @param {boolean} [options.isDryRun=false] - No execute, returns the string of command.
    * @returns {object|string} - See {@link https://docs.tuckn.net/WshChildProcess/global.html#typeRunSyncReturn|typeRunSyncReturn}. If options.isDryRun is true, returns string.
    */
@@ -770,11 +789,14 @@
       throwErrNonExist(FN, pathToImport);
     }
 
-    var args = ['advfirewall', 'import', pathToImport];
+    var argsStr = 'advfirewall import ' + srrd(pathToImport);
+
+    var command = srrd(NETSH_EXE) + ' ' + argsStr;
+    var runsAdmin = obtain(options, 'runsAdmin', true);
     var isDryRun = obtain(options, 'isDryRun', false);
 
-    return execFileSync(NETSH_EXE, args, {
-      runsAdmin: true,
+    return execSync(command, {
+      runsAdmin: runsAdmin,
       winStyle: 'hidden',
       isDryRun: isDryRun
     });
