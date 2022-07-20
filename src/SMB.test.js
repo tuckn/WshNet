@@ -462,6 +462,16 @@ describe('SMB', function () {
     cmd = testCmd + ' -t ' + testName + ' ' + ARG_SHARE_PROCESS;
     rtn = execSync(cmd, { runsAdmin: true });
     expect(rtn.error).toBe(false);
+    // @NOTE Since Admin is specified, this shared command is executed asynchronously. Therefore, it is necessary to wait until completion.
+    var count = 0;
+    while (!net.SMB.existsShareName(sharedName)) {
+      count += 1;
+      WScript.Sleep(300);
+
+      if (count > 100) {
+        expect('Not exist').toBe('Exists the shared: ' + sharedName);
+      }
+    }
 
     // Connects
     rtn = net.SMB.connect(process.env.COMPUTERNAME, sharedName);
@@ -472,7 +482,7 @@ describe('SMB', function () {
     expect(fs.existsSync(smbPath)).toBe(true);
 
     rtn = execFileSync(NET, ['use']);
-    expect(rtn.stdout.indexOf(smbPath)).not.toBe(-1); // @TODO
+    expect(rtn.stdout).toContain(smbPath);
 
     // Cleans
     // Disconnect
