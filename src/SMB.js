@@ -73,7 +73,7 @@
    * @param {string} [options.remark=''] - Annotation.
    * @param {(boolean|undefined)} [options.runsAdmin=true] - true: as Admin, false: as User
    * @param {boolean} [options.isDryRun=false] - No execute, returns the string of command.
-   * @returns {object|string} - See {@link https://docs.tuckn.net/WshChildProcess/global.html#typeRunSyncReturn|typeRunSyncReturn}. If options.isDryRun is true, returns string.
+   * @returns {object|string} - See {@link https://tuckn.net/docs/WshChildProcess/global.html#typeRunSyncReturn|typeRunSyncReturn}. If options.isDryRun is true, returns string.
    */
   net.SMB.shareDirectory = function (shareName, dirPath, options) {
     var FN = 'net.SMB.shareDirectory';
@@ -134,7 +134,7 @@
    * @function showLocalShares
    * @memberof Wsh.Net.SMB
    * @param {object} [options] - Optional parameters.
-   * @param {(number|string)} [options.winStyle='activeDef'] - See {@link https://docs.tuckn.net/WshUtil/Wsh.Constants.windowStyles.html|Wsh.Constants.windowStyles}.
+   * @param {(number|string)} [options.winStyle='activeDef'] - See {@link https://tuckn.net/docs/WshUtil/Wsh.Constants.windowStyles.html|Wsh.Constants.windowStyles}.
    * @returns {void}
    */
   net.SMB.showLocalShares = function (options) {
@@ -261,7 +261,7 @@
    * @param {object} [options] - Optional parameters.
    * @param {(boolean|undefined)} [options.runsAdmin=true] - true: as Admin, false: as User
    * @param {boolean} [options.isDryRun=false] - No execute, returns the string of command.
-   * @returns {object|string} - See {@link https://docs.tuckn.net/WshChildProcess/global.html#typeRunSyncReturn|typeRunSyncReturn}. If options.isDryRun is true, returns string.
+   * @returns {object|string} - See {@link https://tuckn.net/docs/WshChildProcess/global.html#typeRunSyncReturn|typeRunSyncReturn}. If options.isDryRun is true, returns string.
    */
   net.SMB.delSharedDirectory = function (shareName, options) {
     var FN = 'net.SMB.delSharedDirectory';
@@ -419,7 +419,7 @@ C:\>net share Cdrv /delete
    * @param {object} [options] - Optional parameters.
    * @param {(boolean|undefined)} [options.runsAdmin] - true: as Admin, false: as User
    * @param {boolean} [options.isDryRun=false] - No execute, returns the string of command.
-   * @returns {object|string} - See {@link https://docs.tuckn.net/WshChildProcess/global.html#typeRunSyncReturn|typeRunSyncReturn}. If options.isDryRun is true, returns string.
+   * @returns {object|string} - See {@link https://tuckn.net/docs/WshChildProcess/global.html#typeRunSyncReturn|typeRunSyncReturn}. If options.isDryRun is true, returns string.
    */
   net.SMB.connectSync = function (comp, shareName, domain, user, pwd, options) {
     var argsStr = net.SMB._getNetUseArgsStrToConnect(
@@ -461,7 +461,7 @@ stderr: "システム エラー 1219 が発生しました。
    * @function showCurrentSession
    * @memberof Wsh.Net.SMB
    * @param {object} [options] - Optional parameters.
-   * @param {(number|string)} [options.winStyle='activeDef'] - See {@link https://docs.tuckn.net/WshUtil/Wsh.Constants.windowStyles.html|Wsh.Constants.windowStyles}.
+   * @param {(number|string)} [options.winStyle='activeDef'] - See {@link https://tuckn.net/docs/WshUtil/Wsh.Constants.windowStyles.html|Wsh.Constants.windowStyles}.
    * @returns {void}
    */
   net.SMB.showCurrentSession = function (options) {
@@ -669,7 +669,7 @@ stderr: "システム エラー 1219 が発生しました。
    * @param {string} [shareName] - The share Name
    * @param {object} [options] - Optional parameters.
    * @param {boolean} [options.isDryRun=false] - No execute, returns the string of command.
-   * @returns {object|string} - See {@link https://docs.tuckn.net/WshChildProcess/global.html#typeRunSyncReturn|typeRunSyncReturn}. If options.isDryRun is true, returns string.
+   * @returns {object|string} - See {@link https://tuckn.net/docs/WshChildProcess/global.html#typeRunSyncReturn|typeRunSyncReturn}. If options.isDryRun is true, returns string.
    */
   net.SMB.disconnectSync = function (comp, shareName, options) {
     var FN = 'net.SMB.disconnectSync';

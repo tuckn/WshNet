@@ -37,9 +37,9 @@
     "openGraph": {
       "title": "WshNet",
       "type": "website",
-      "image": "https://docs.tuckn.net/WshNet/img/openGraph-image.png",
+      "image": "https://tuckn.net/docs/WshNet/img/openGraph-image.png",
       "site_name": "@tuckn/WshNet",
-      "url": "https://docs.tuckn.net/WshNet"
+      "url": "https://tuckn.net/docs/WshNet/"
     },
     "meta": {
       "title": "WshNet",

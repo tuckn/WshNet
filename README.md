@@ -13,7 +13,7 @@ This module provides helper WSH (Windows Script Host) functions that handle netw
 &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;└─ [WshOS](https://github.com/tuckn/WshOS)  
 &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;└─ [WshPath](https://github.com/tuckn/WshPath)  
 &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;└─ [WshUtil](https://github.com/tuckn/WshUtil)  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;└─ [WshPolyfill](https://github.com/tuckn/WshPolyfill)  
+&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;└─ [WshPolyfill](https://github.com/tuckn/WshPolyfill)
 
 The upper layer module can use all the functions of the lower layer module.
 
@@ -249,7 +249,7 @@ console.dir(connections);
 ```
 
 Many other functions will be added.
-See the [documentation](https://docs.tuckn.net/WshNet) for more details.
+See the [documentation](https://tuckn.net/docs/WshNet/) for more details.
 
 ### Dependency Modules
 
@@ -265,15 +265,15 @@ You can also use the following helper functions in your JScript (_.\\MyScript.js
 
 ## Documentation
 
-See all specifications [here](https://docs.tuckn.net/WshNet) and also below.
+See all specifications [here](https://tuckn.net/docs/WshNet/) and also below.
 
-- [WshPolyfill](https://docs.tuckn.net/WshPolyfill)
-- [WshUtil](https://docs.tuckn.net/WshUtil)
-- [WshPath](https://docs.tuckn.net/WshPath)
-- [WshOS](https://docs.tuckn.net/WshOS)
-- [WshFileSystem](https://docs.tuckn.net/WshFileSystem)
-- [WshProcess](https://docs.tuckn.net/WshProcess)
-- [WshChildProcess](https://docs.tuckn.net/WshChildProcess)
+- [WshPolyfill](https://tuckn.net/docs/WshPolyfill/)
+- [WshUtil](https://tuckn.net/docs/WshUtil/)
+- [WshPath](https://tuckn.net/docs/WshPath/)
+- [WshOS](https://tuckn.net/docs/WshOS/)
+- [WshFileSystem](https://tuckn.net/docs/WshFileSystem/)
+- [WshProcess](https://tuckn.net/docs/WshProcess/)
+- [WshChildProcess](https://tuckn.net/docs/WshChildProcess/)
 
 ## TODO
 

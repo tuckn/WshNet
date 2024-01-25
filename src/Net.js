@@ -88,7 +88,7 @@
    * @function showIpConfigAll
    * @memberof Wsh.Net
    * @param {object} [options] - Optional parameters.
-   * @param {(number|string)} [options.winStyle='activeDef'] - See {@link https://docs.tuckn.net/WshUtil/Wsh.Constants.windowStyles.html|Wsh.Constants.windowStyles}.
+   * @param {(number|string)} [options.winStyle='activeDef'] - See {@link https://tuckn.net/docs/WshUtil/Wsh.Constants.windowStyles.html|Wsh.Constants.windowStyles}.
    * @returns {void}
    */
   net.showIpConfigAll = function (options) {
@@ -476,7 +476,7 @@
    * @param {object} [options] - Optional parameters.
    * @param {boolean} [options.isDryRun=false] - No execute, returns the string of command.
    * @param {(boolean|undefined)} [options.runsAdmin=true] - true: as Admin, false: as User
-   * @returns {object|string} - See {@link https://docs.tuckn.net/WshChildProcess/global.html#typeRunSyncReturn|typeRunSyncReturn}. If options.isDryRun is true, returns string.
+   * @returns {object|string} - See {@link https://tuckn.net/docs/WshChildProcess/global.html#typeRunSyncReturn|typeRunSyncReturn}. If options.isDryRun is true, returns string.
    */
   net.exportWinFirewallSettings = function (destPath, options) {
     var FN = 'net.exportWinFirewallSettings';
@@ -514,7 +514,7 @@
    * @param {object} [options] - Optional parameters.
    * @param {(boolean|undefined)} [options.runsAdmin] - true: as Admin, false: as User
    * @param {boolean} [options.isDryRun=false] - No execute, returns the string of command.
-   * @returns {object|string} - See {@link https://docs.tuckn.net/WshChildProcess/global.html#typeRunSyncReturn|typeRunSyncReturn}. If options.isDryRun is true, returns string.
+   * @returns {object|string} - See {@link https://tuckn.net/docs/WshChildProcess/global.html#typeRunSyncReturn|typeRunSyncReturn}. If options.isDryRun is true, returns string.
    */
   net.setIpAddress = function (netName, ip, mask, defGw, options) {
     var FN = 'net.setIpAddress';
@@ -777,7 +777,7 @@
    * @param {object} [options] - Optional parameters.
    * @param {(boolean|undefined)} [options.runsAdmin=true] - true: as Admin, false: as User
    * @param {boolean} [options.isDryRun=false] - No execute, returns the string of command.
-   * @returns {object|string} - See {@link https://docs.tuckn.net/WshChildProcess/global.html#typeRunSyncReturn|typeRunSyncReturn}. If options.isDryRun is true, returns string.
+   * @returns {object|string} - See {@link https://tuckn.net/docs/WshChildProcess/global.html#typeRunSyncReturn|typeRunSyncReturn}. If options.isDryRun is true, returns string.
    */
   net.importWinFirewallSettings = function (srcPath, options) {
     var FN = 'net.importWinFirewallSettings';
